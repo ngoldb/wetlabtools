@@ -83,11 +83,11 @@ def load_CD_melt(data_file: str):
                         dataline = line.strip().split(',')[1:]
                         tmp_data[m_wv] = dataline
                     
-                    # now construct Data Frame
+                    # now construct Data Frame and convert to numeric
                     df_temp = pd.DataFrame.from_dict(tmp_data, 
                                 orient='index',
                                 columns=columns
-                               )
+                               ).apply(pd.to_numeric)
 
                     data_dict[prop][sample] = df_temp
 
@@ -118,11 +118,11 @@ def load_CD_melt(data_file: str):
                         dataline = line.strip().split(',')[1:]
                         tmp_data[m_wv] = dataline
 
-                    # now construct Data Frame
+                    # now construct Data Frame and convert to numeric
                     df_temp = pd.DataFrame.from_dict(tmp_data, 
                                 orient='index',
                                 columns=columns
-                               )
+                               ).apply(pd.to_numeric)
 
                     data_dict[prop][sample] = df_temp
     
@@ -168,8 +168,44 @@ def get_buffer_CD(buffer_data: str):
                     dataline = line.strip().split(',')[1:]
                     tmp_data[m_wv] = dataline
 
-                # now construct Data Frame
+                # now construct Data Frame and convert to numeric
                 df_temp = pd.DataFrame.from_dict(tmp_data, 
                             orient='index'
-                           )
+                           ).apply(pd.to_numeric)
     return df_temp
+
+
+
+def load_CD_data(data_csv: str, buffer_csv: str=None):
+    """
+    :param: data_csv: str, path to the CD data csv file
+    :param: buffer_csv: str, path to the buffer csv file
+    
+    Function to load and process CD data. The function will load CD, HV, and Absorbance data from the
+    data csv file and return a dictonary with all data for all samples. Additionally, it will subtract
+    the buffer CD signal in case a path to the buffer csv file is provided.
+    """
+    
+    data = load_CD_melt(data_file=data_csv)
+    
+    if buffer_csv != None:
+        buffer_CD = get_buffer_CD(buffer_csv)
+        
+        # correct for buffer baseline
+        samples = [sample for sample in data['CircularDichroism']]
+        
+        for sample in samples:
+            column_names = data['CircularDichroism'][sample].columns
+            index_names = data['CircularDichroism'][sample].index
+            data['CircularDichroism'][sample] = pd.DataFrame(data['CircularDichroism'][sample].to_numpy() - buffer_CD.to_numpy(),
+                                                             columns=column_names,
+                                                             index=index_names)
+        
+    return data
+
+
+
+def plot_CD_data():
+    """
+    """
+    pass
