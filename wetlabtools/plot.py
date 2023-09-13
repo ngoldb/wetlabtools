@@ -386,10 +386,14 @@ def plot_MALS(path:str, flow_rate:float, min_x:float=0, max_x:float=999, save_pd
         ax.xaxis.set_minor_locator(ticker.MultipleLocator(1))
         
         plt.title(sample_name)
+
         if save_pdf:
             plt.savefig(csv_path[:-4]+'.pdf')
+            print(f'saving plot to {csv_path[:-4]}.pdf')
+        
         if save_png: 
             plt.savefig(csv_path[:-4]+'.png', dpi=300)
+            print(f'saving plot to {csv_path[:-4]}.png')
         
         plt.show()
         plt.close('all')
