@@ -4,9 +4,12 @@ This repo contains useful software tools for wet lab taks. For example you can e
 ## Installation
 To install the package, first clone the repo to your local machine and install the environment from the yml file:
 ```
-cd /path/to/wetlabtools
+cd ~
+git clone https://github.com/ngoldb/wetlabtools.git
+cd ~/wetlabtools
 conda env create -f wetlabtools.yml
 ```
+
 Activate the environment and install the downloaded package using pip (make sure you are in the directory above the package):
 ```
 conda activate wetlabtools
