@@ -21,4 +21,4 @@ python -m ipykernel install --user --name=wetlabtools
 ```
 
 ## Examples
-The repo contains example notebooks to demonstrate usage.
+A jupyter notebook with examples is included here: `wetlabtools/examples.ipynb`.
