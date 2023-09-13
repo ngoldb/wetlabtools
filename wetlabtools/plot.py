@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import seaborn as sns
 
 # =======================================
@@ -380,9 +381,9 @@ def plot_MALS(path:str, flow_rate:float, min_x:float=0, max_x:float=999, save_pd
         ax.set_xlabel("Volume [ml]", fontsize = 12)
         if min_x and max_x:
             ax.set_xlim(min_x, max_x)
-        ax.xaxis.set_major_locator(plt.ticker.MultipleLocator(5))
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(5))
         ax.xaxis.set_major_formatter('{x:.0f}')
-        ax.xaxis.set_minor_locator(plt.ticker.MultipleLocator(1))
+        ax.xaxis.set_minor_locator(ticker.MultipleLocator(1))
         
         plt.title(sample_name)
         if save_pdf:
