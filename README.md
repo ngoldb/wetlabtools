@@ -13,6 +13,12 @@ conda activate wetlabtools
 cd ../
 pip install -e wetlabtools
 ```
+If you like to add the environment to your jupyter lab, run the following commands:
+```
+conda activate wetlabtools
+conda install -c anaconda ipykernel
+python -m ipykernel install --user --name=wetlabtools
+```
 
 ## Examples
 The repo contains example notebooks to demonstrate usage.
