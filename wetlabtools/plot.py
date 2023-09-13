@@ -1,14 +1,14 @@
 """
 Tools to easily plot experimental data:
 - CD spectra
-- SEC-MALS
-- FPLC chromatograms
 """
 
+import os
 import pandas as pd
 import numpy as np
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 # =======================================
 # CD DATA
@@ -75,11 +75,12 @@ def load_CD_melt(data_file: str):
                     
                     # get column names (temperatures)
                     columns = line.strip().strip(',').split(',')
+                    columns = [int(name) for name in columns]
                     
                     # iterate over the available wave lengths
                     for _, _ in enumerate(wv_len[::-1]):
                         line = next(fobj)
-                        m_wv = line.strip().split(',')[0]
+                        m_wv = int(line.strip().split(',')[0])
                         dataline = line.strip().split(',')[1:]
                         tmp_data[m_wv] = dataline
                     
@@ -110,11 +111,12 @@ def load_CD_melt(data_file: str):
 
                     # get column names (temperatures)
                     columns = line.strip().strip(',').split(',')
+                    columns = [int(name) for name in columns]
 
                     # iterate over the available wave lengths
                     for _, _ in enumerate(wv_len[::-1]):
                         line = next(fobj)
-                        m_wv = line.strip().split(',')[0]
+                        m_wv = int(line.strip().split(',')[0])
                         dataline = line.strip().split(',')[1:]
                         tmp_data[m_wv] = dataline
 
@@ -195,8 +197,8 @@ def load_CD_data(data_csv: str, buffer_csv: str=None):
         samples = [sample for sample in data['CircularDichroism']]
         
         for sample in samples:
-            column_names = data['CircularDichroism'][sample].columns
-            index_names = data['CircularDichroism'][sample].index
+            column_names = data['CircularDichroism'][sample].columns.astype(int)
+            index_names = data['CircularDichroism'][sample].index.astype(int)
             data['CircularDichroism'][sample] = pd.DataFrame(data['CircularDichroism'][sample].to_numpy() - buffer_CD.to_numpy(),
                                                              columns=column_names,
                                                              index=index_names)
@@ -205,7 +207,116 @@ def load_CD_data(data_csv: str, buffer_csv: str=None):
 
 
 
-def plot_CD_data():
-    """
-    """
-    pass
+def plot_CD(data:dict, zooms:list, out_path:str='.', cutoff:float=2.0, mode:str='fade', min_x:float=195, max_x:float=260, save_pdf:bool=False, save_png:bool=False):
+    '''
+    :param: data: dict, data dictonary containing CD, HV, and Absorbance data
+    :param: zooms: list, list of zoomed regions, False for no zoom, len of list must match number of samples
+    :param: out_path: str, path to the output directory
+    :param: cutoff: float, cutoff for absorbance
+    :param: mode: str, cutoff mode for CD plot ['None','fade','cut']
+    :param: min_x: float, min wavelength to plot
+    :param: max_x: float, max wavelength to plot
+    :param: save_pdf: bool, whether to save plot as pdf
+    :param: save_png: bool, whether to save plot as png
+    Function to plot data from CD melting ramps. Requires processing of the data in advance. Will plot CD spectrum, HV, and Absorbance
+    '''
+    i = 0
+    
+    sample_names = data['CircularDichroism'].keys()
+    
+    for sample_name in sample_names:
+        zoom = zooms[i]
+        mode = mode.upper()
+        out_file = os.path.join(out_path, sample_name)
+        print(out_file)
+
+        # CD signal
+        df = data['CircularDichroism'][sample_name]
+        df = df.dropna(axis=1, how="all")
+        df = df[::-1]
+        
+        df_a = data['Absorbance'][sample_name]
+        df_a = df_a.dropna(axis=1, how="all")
+        df_a = df_a[::-1]
+        
+        # plot
+        fig, ((ax1,ax3), (ax4, ax5)) = plt.subplots(2,2, figsize=(15, 10)) # ax2 is zoom if used
+        
+        if mode == 'NONE':
+            sns.lineplot(data=df, legend="full", ax=ax1, dashes=False, palette="ch:s=-.2,r=.6").set(title=sample_name)
+        else:
+            dfn = df.mask(df_a >= cutoff)
+            sns.lineplot(data=dfn, legend="full", ax=ax1, dashes=False, palette="ch:s=-.2,r=.6").set(title=sample_name)
+            
+            if mode == 'FADE':
+                dff = df.mask(df_a <= cutoff-cutoff*0.1)
+                sns.lineplot(data=dff, legend=False, ax=ax1, dashes=False, palette="ch:s=-.2,r=.6", alpha=0.2)
+                
+        sns.move_legend(ax1, "upper left", bbox_to_anchor=(1,1), prop={'size': 8}, ncol=2, title='Temperature [°C]', frameon=False)
+        
+        ax1.set(ylabel = "CD [mdeg]", xlabel = "Wavelength [nm]")
+        ax1.set_xlim([min_x,max_x])
+        selected_rows = df.loc[min_x+5:max_x-5]
+        
+        y_min, y_max = selected_rows.min().min()-10, selected_rows.max().max()
+        ax1.set_ylim(y_min, y_max)
+        
+        # plot zoom in plot
+        if zoom:
+            ax2 = plt.axes([0.2857, 0.7, .2, .2])
+            sns.lineplot(data=df, ax=ax2, dashes=False, legend=False, palette="ch:s=-.2,r=.6")
+            ax2.set_box_aspect(0.7)
+            ax2.set_title('Zoom')
+            ax2.set_xlim([205,230])
+            ax2.set_ylim(zoom)
+            ax2.set(xlabel = None)
+            ax2.set(xticklabels=[])
+            ax2.set(ylabel = None)
+            ax2.set(yticklabels = [])
+            
+        # plot melting correlation at 220 nm
+        df2 = df.copy()
+        row_220 = df.loc[220].transpose()
+        plot = sns.scatterplot(data = row_220, ax=ax3, legend = False)
+        plot.set(title=sample_name)
+        sns.lineplot(data=row_220, ax=ax3)
+        plot.set(ylabel = "CD [mdeg] @220 nm", xlabel = "Temperature [°C]")
+        plot.set_xticklabels(plot.get_xticklabels(), rotation=90)
+        y2_min, y2_max = row_220.min()-10, row_220.max()+10
+        ax3.set_ylim(y2_min, y2_max)
+        
+        plt.subplots_adjust(left=0.1,
+                    bottom=0.1,
+                    right=0.9,
+                    top=0.9,
+                    wspace=0.4,
+                    hspace=0.4)
+        
+        # Absorbance data
+        sns.lineplot( data=df_a, legend='full', ax=ax4, dashes=False, palette="ch:s=-.2,r=.6").set(title=sample_name )
+        sns.move_legend( ax4, "upper left", bbox_to_anchor=(1,1), prop={'size': 8}, ncol=2, title='Temperature [°C]', frameon=False )
+        ax4.set( ylabel = "Absorbance [a.u.]", xlabel = "Wavelength [nm]" )
+        ax4.set_xlim( [min_x,max_x] )
+        ax4.axhline( y=cutoff, color='red' )
+        
+        # HV data
+        df = data['HV'][sample_name]
+        df = df.dropna( axis=1, how="all" )
+        df = df[::-1]
+        sns.lineplot( data=df, legend=False, ax=ax5, dashes=False, palette="ch:s=-.2,r=.6" ).set(title=sample_name)
+        ax5.set( ylabel = "HV [V]", xlabel = "Wavelength [nm]" )
+        ax5.set_xlim( [min_x,max_x] )
+        # ax5.axhline( y=800, color='red' )
+        
+        if save_pdf: 
+            plt.savefig(out_file+'.pdf')
+            print(f'saving plot to {out_file}.pdf')
+        if save_png: 
+            plt.savefig(out_file+'.png', dpi=300)
+            print(f'saving plot to {out_file}.png')
+        
+        plt.show()
+        plt.close()
+        i = i + 1
+    
+    return None
