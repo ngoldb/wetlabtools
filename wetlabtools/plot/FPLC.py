@@ -57,9 +57,11 @@ def import_fplc(sec_data: str):
 
 
 
-def interactive_fplc(csv_path: str):
+def interactive_fplc(csv_path: str, height:int=600, width:int=1_000):
     """
     :param: csv_path: str, path to the csv file containing FPLC data
+    :param: height: int, height of the plot
+    :param: width: int, width of the plot
     Function to make an interactive plot of FPLC data
     """
 
@@ -80,8 +82,8 @@ def interactive_fplc(csv_path: str):
 
     ## Figure setup
     p = bokeh.plotting.figure(
-        frame_width=600,
-        frame_height=300,
+        frame_width=width,
+        frame_height=height,
         x_axis_label='Volume (ml)',
         y_axis_label='Absorbance 280 nm (a.u)',
         toolbar_location='above'

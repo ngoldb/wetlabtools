@@ -2,7 +2,7 @@
 
 from .CD import cd, load_CD_data
 from .MALS import secmals
-from .FPLC import interactive_fplc
+from .FPLC import interactive_fplc, import_fplc
 
 __author__ = "Nicolas Goldbach"
 __email__ = "nicolas.goldbach@epfl.ch"
