@@ -125,6 +125,10 @@ def load_CD_melt(data_file: str):
                                ).apply(pd.to_numeric)
 
                     data_dict[prop][sample] = df_temp
+
+                    # reset property if collected all data
+                    if len(data_dict[prop]) == len(samples):
+                        prop = ''
     
     return data_dict
 
@@ -176,7 +180,7 @@ def get_buffer_CD(buffer_data: str):
 
 
 
-def load_CD_data(data_csv: str, buffer_csv: str=None):
+def load_CD_data(data_csv: str, buffer_csv: str=''):
     """
     :param: data_csv: str, path to the CD data csv file
     :param: buffer_csv: str, path to the buffer csv file
@@ -188,7 +192,7 @@ def load_CD_data(data_csv: str, buffer_csv: str=None):
     
     data = load_CD_melt(data_file=data_csv)
     
-    if buffer_csv != None:
+    if buffer_csv != '':
         buffer_CD = get_buffer_CD(buffer_csv)
         
         # correct for buffer baseline
@@ -216,6 +220,7 @@ def cd(data:dict, zooms:list, out_path:str='.', cutoff:float=2.0, mode:str='fade
     :param: max_x: float, max wavelength to plot
     :param: save_pdf: bool, whether to save plot as pdf
     :param: save_png: bool, whether to save plot as png
+    
     Function to plot data from CD melting ramps. Requires processing of the data in advance. Will plot CD spectrum, HV, and Absorbance
     '''
     i = 0
