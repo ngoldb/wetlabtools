@@ -12,12 +12,12 @@ import matplotlib.ticker as ticker
 
 def secmals(path:str, flow_rate:float, min_x:float=0, max_x:float=999, save_pdf:bool=False, save_png:bool=False):
     '''
-    :param: path: str, path to the directory with csv files
-    :param: flow_rate: float, flow rate in ml/min to convert min to ml (x-axis)
-    :param: min_x: float, minimum retention volume to plot
-    :param: max_x: float, maximum retention volume to plot
-    :param: save_png: bool, whether to save plots as pdf
-    :param: save_pdf: bool, whether to save plots as png
+    path: str, path to the directory with csv files
+    flow_rate: float, flow rate in ml/min to convert min to ml (x-axis)
+    min_x: float, minimum retention volume to plot
+    max_x: float, maximum retention volume to plot
+    save_png: bool, whether to save plots as pdf
+    save_pdf: bool, whether to save plots as png
     
     Function to plot data from SEC-MALS. It will parse the directory for all csv files and plot them as SEC-MALS data.
     '''

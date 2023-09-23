@@ -13,7 +13,7 @@ import seaborn as sns
 
 def load_CD_melt(data_file: str):
     """
-    :param: fata_file: str, path to the ProData csv file
+    fasta_file: str, path to the ProData csv file
 
     Function to read ProData csv file and process the data. Will return a dictonary containing CD, HV and Absorbance data. Each data block is stored in dicts.
     If a path to a buffer csv file is provided, the background will automatically be subtracted from the CD data
@@ -136,7 +136,8 @@ def load_CD_melt(data_file: str):
 
 def get_buffer_CD(buffer_data: str):
     """
-    :param: buffer_data: str, path to the csv with buffer CD data
+    buffer_data: str, path to the csv with buffer CD data
+    
     Function to read in CD signal from buffer background. Returns a Data Frame.
     """
     # Initialize variables
@@ -182,8 +183,8 @@ def get_buffer_CD(buffer_data: str):
 
 def load_CD_data(data_csv: str, buffer_csv: str=''):
     """
-    :param: data_csv: str, path to the CD data csv file
-    :param: buffer_csv: str, path to the buffer csv file
+    data_csv: str, path to the CD data csv file
+    buffer_csv: str, path to the buffer csv file
     
     Function to load and process CD data. The function will load CD, HV, and Absorbance data from the
     data csv file and return a dictonary with all data for all samples. Additionally, it will subtract
@@ -211,15 +212,15 @@ def load_CD_data(data_csv: str, buffer_csv: str=''):
 
 def cd(data:dict, zooms:list, out_path:str='.', cutoff:float=2.0, mode:str='fade', min_x:float=195, max_x:float=260, save_pdf:bool=False, save_png:bool=False):
     '''
-    :param: data: dict, data dictonary containing CD, HV, and Absorbance data
-    :param: zooms: list, list of zoomed regions, False for no zoom, len of list must match number of samples
-    :param: out_path: str, path to the output directory
-    :param: cutoff: float, cutoff for absorbance
-    :param: mode: str, cutoff mode for CD plot ['None','fade','cut']
-    :param: min_x: float, min wavelength to plot
-    :param: max_x: float, max wavelength to plot
-    :param: save_pdf: bool, whether to save plot as pdf
-    :param: save_png: bool, whether to save plot as png
+    data: dict, data dictonary containing CD, HV, and Absorbance data
+    zooms: list, list of zoomed regions, False for no zoom, len of list must match number of samples
+    out_path: str, path to the output directory
+    cutoff: float, cutoff for absorbance
+    mode: str, cutoff mode for CD plot ['None','fade','cut']
+    min_x: float, min wavelength to plot
+    max_x: float, max wavelength to plot
+    save_pdf: bool, whether to save plot as pdf
+    save_png: bool, whether to save plot as png
     
     Function to plot data from CD melting ramps. Requires processing of the data in advance. Will plot CD spectrum, HV, and Absorbance
     '''

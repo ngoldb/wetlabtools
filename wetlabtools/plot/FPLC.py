@@ -17,7 +17,8 @@ bokeh.io.output_notebook()
 
 def import_fplc(sec_data: str):
     """
-    :param: sec_data: str, path to the csv file with FPLC data
+    sec_data: str, path to the csv file with FPLC data
+    
     Function to load FPLC data and fix the column headings. Will return a Data Frame.
     """
     
@@ -59,9 +60,10 @@ def import_fplc(sec_data: str):
 
 def interactive_fplc(csv_path: str, height:int=600, width:int=1_000):
     """
-    :param: csv_path: str, path to the csv file containing FPLC data
-    :param: height: int, height of the plot
-    :param: width: int, width of the plot
+    csv_path: str, path to the csv file containing FPLC data
+    height: int, height of the plot
+    width: int, width of the plot
+    
     Function to make an interactive plot of FPLC data
     """
 
