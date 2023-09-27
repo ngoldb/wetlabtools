@@ -22,7 +22,6 @@ from wetlabtools import utils
 # ============================
 # Steady-state affinity data
 # ============================
-# TODO: normalize option to scale all plots to RU max
 
 def load_affinity_data(file: str):
     '''
