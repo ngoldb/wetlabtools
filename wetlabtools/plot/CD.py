@@ -7,9 +7,10 @@ import pandas as pd
 import numpy as np
 
 import matplotlib.pyplot as plt
+import matplotlib
 import seaborn as sns
 
-
+import colorcet
 
 def load_CD_melt(data_file: str):
     """
@@ -222,8 +223,14 @@ def cd(data:dict, zooms:list, out_path:str='.', cutoff:float=2.0, mode:str='fade
     save_pdf: bool, whether to save plot as pdf
     save_png: bool, whether to save plot as png
     
-    Function to plot data from CD melting ramps. Requires processing of the data in advance. Will plot CD spectrum, HV, and Absorbance
+    Function to plot data from CD melting ramps. Requires processing of the data in advance. 
+    Will plot CD spectrum, HV, and Absorbance
     '''
+
+    # color palette
+    fire_cmap = matplotlib.colors.LinearSegmentedColormap.from_list('fire', colorcet.fire)
+    plt.register_cmap('colorcet_fire', fire_cmap)
+
     i = 0
     
     sample_names = data['CircularDichroism'].keys()
@@ -246,14 +253,14 @@ def cd(data:dict, zooms:list, out_path:str='.', cutoff:float=2.0, mode:str='fade
         fig, ((ax1,ax3), (ax4, ax5)) = plt.subplots(2,2, figsize=(15, 10)) # ax2 is zoom if used
         
         if mode == 'NONE':
-            sns.lineplot(data=df, legend="full", ax=ax1, dashes=False, palette="ch:s=-.2,r=.6").set(title=sample_name)
+            sns.lineplot(data=df, legend="full", ax=ax1, dashes=False, palette="colorcet_fire").set(title=sample_name)
         else:
             dfn = df.mask(df_a >= cutoff)
-            sns.lineplot(data=dfn, legend="full", ax=ax1, dashes=False, palette="ch:s=-.2,r=.6").set(title=sample_name)
+            sns.lineplot(data=dfn, legend="full", ax=ax1, dashes=False, palette="colorcet_fire").set(title=sample_name)
             
             if mode == 'FADE':
                 dff = df.mask(df_a <= cutoff+cutoff*0.1)
-                sns.lineplot(data=dff, legend=False, ax=ax1, dashes=False, palette="ch:s=-.2,r=.6", alpha=0.2)
+                sns.lineplot(data=dff, legend=False, ax=ax1, dashes=False, palette='colorcet_fire', alpha=0.2)
                 
         sns.move_legend(ax1, "upper left", bbox_to_anchor=(1,1), prop={'size': 8}, ncol=2, title='Temperature [°C]', frameon=False)
         
@@ -267,7 +274,7 @@ def cd(data:dict, zooms:list, out_path:str='.', cutoff:float=2.0, mode:str='fade
         # plot zoom in plot
         if zoom:
             ax2 = plt.axes([0.2857, 0.7, .2, .2])
-            sns.lineplot(data=df, ax=ax2, dashes=False, legend=False, palette="ch:s=-.2,r=.6")
+            sns.lineplot(data=df, ax=ax2, dashes=False, legend=False, palette="colorcet_fire")
             ax2.set_box_aspect(0.7)
             ax2.set_title('Zoom')
             ax2.set_xlim([205,230])
@@ -296,7 +303,7 @@ def cd(data:dict, zooms:list, out_path:str='.', cutoff:float=2.0, mode:str='fade
                     hspace=0.4)
         
         # Absorbance data
-        sns.lineplot( data=df_a, legend='full', ax=ax4, dashes=False, palette="ch:s=-.2,r=.6").set(title=sample_name )
+        sns.lineplot( data=df_a, legend='full', ax=ax4, dashes=False, palette="colorcet_fire").set(title=sample_name )
         sns.move_legend( ax4, "upper left", bbox_to_anchor=(1,1), prop={'size': 8}, ncol=2, title='Temperature [°C]', frameon=False )
         ax4.set( ylabel = "Absorbance [a.u.]", xlabel = "Wavelength [nm]" )
         ax4.set_xlim( [min_x,max_x] )
@@ -306,7 +313,7 @@ def cd(data:dict, zooms:list, out_path:str='.', cutoff:float=2.0, mode:str='fade
         df = data['HV'][sample_name]
         df = df.dropna( axis=1, how="all" )
         df = df[::-1]
-        sns.lineplot( data=df, legend=False, ax=ax5, dashes=False, palette="ch:s=-.2,r=.6" ).set(title=sample_name)
+        sns.lineplot( data=df, legend=False, ax=ax5, dashes=False, palette="colorcet_fire" ).set(title=sample_name)
         ax5.set( ylabel = "HV [V]", xlabel = "Wavelength [nm]" )
         ax5.set_xlim( [min_x,max_x] )
         # ax5.axhline( y=800, color='red' )
@@ -322,4 +329,4 @@ def cd(data:dict, zooms:list, out_path:str='.', cutoff:float=2.0, mode:str='fade
         plt.close()
         i = i + 1
     
-    return None
+    return fig
