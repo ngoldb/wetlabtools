@@ -3,6 +3,7 @@ Module to load, plot, and fit data from SPR experiments.
 """
 
 # data handling
+import os
 import numpy as np
 import pandas as pd
 
@@ -13,11 +14,16 @@ import matplotlib.pyplot as plt
 # non-linear regression
 import scipy
 
+# wetlabtool utils
+from wetlabtools import utils
+
 
 
 # ============================
 # Steady-state affinity data
 # ============================
+# TODO: normalize option to scale all plots to RU max
+
 def load_affinity_data(file: str):
     '''
     file: str, path to the file.txt with the affinity data
@@ -93,11 +99,12 @@ def spr_affinity(measured: pd.DataFrame, fitted: pd.DataFrame,
     # plot the measured datapoints
     sns.scatterplot(data=measured,
                     x='x',
-                    y='y'
+                    y='y',
+                    ax=ax
                    )
     
     # plot the fit
-    sns.lineplot(data=fitted, x='x', y='y')
+    sns.lineplot(data=fitted, x='x', y='y', ax=ax)
     
     # log x axis and labels
     sns.despine()
@@ -110,6 +117,8 @@ def spr_affinity(measured: pd.DataFrame, fitted: pd.DataFrame,
         plt.savefig(f"{sample}_affinity.png", dpi=300)
 
     plt.show()
+
+    return fig
     
 
 def fit_sigmoid_function(data, mock_scale='log'):
@@ -157,6 +166,97 @@ def fit_sigmoid_function(data, mock_scale='log'):
     
     return df_fit, ec50
 
+
+def multi_affinity(data_dir: str, 
+                   normalize: bool=True, 
+                   fit_sigmoid: bool=True,
+                   report_kd: bool=True,
+                   save_fig: bool=False, 
+                   log: bool=True, 
+                   height:int=4, 
+                   width: int=6):
+    """
+    data_dir: str, path to the directory containing txt files
+    normalize: bool, whether to rescale all data from 0 to 100% of respective RU max
+    save_fig: bool, whether to save the figure
+    fit_sigmoid: bool, whether to fit a sigmoid function
+    report_kd: bool, whether to print Kd in the legend of the plot
+    log: bool, whether or not to plot on logarithmic x-axis
+    heigh: int, height of the plot
+    wdith: int, width of the plot
+
+    Function to plot affinity data from multiple experiments and overlay the curves in a single plot.
+    It will parse the directory and collect all txt files containing "affinity" in the file name. It
+    will then load all the data, fit a sigmoid function to the raw data and plot experimental data
+    and the fitted function.
+    """
+
+    # parse the directory and collect txt files with 'affinity' in file name
+    files = [os.path.join(data_dir, file) 
+             for file in os.listdir(data_dir) 
+             if file.endswith('.txt') and 'affinity' in file]
+
+    # initialize the plot
+    fig, ax = plt.subplots(figsize=(width, height))
+
+    # iterate over all files
+    for file in files:
+
+        # load data
+        data = load_affinity_data(file)
+        sample = os.path.basename(file).split('_')[0]
+
+        # fit sigmoid function if requested
+        if fit_sigmoid:
+            if log:
+                scale = 'log'
+            else:
+                scale = 'lin'
+            
+            fitted, kd = fit_sigmoid_function(data, mock_scale=scale)
+
+            if normalize:
+                y_max = fitted['y'].max()
+                y_min = fitted['y'].min()
+                fitted['y'] = fitted['y'].apply(lambda y: utils.normalize_percent_max(y, y_max, y_min))
+
+            # plot fitted function
+            sns.lineplot(data=fitted, x='x', y='y')
+
+        # normalize if requested
+        if normalize:
+            norm_data = data.copy()
+            y_max = data['y'].max()
+            y_min = data['y'].min()
+            norm_data['y'] = data['y'].apply(lambda y: utils.normalize_percent_max(y, y_max, y_min))
+        
+        # plotting experimental data points
+        if report_kd:
+            label = f'{sample} (Kd = {round(kd*1_000, 2)} nM)'
+        else:
+            label = sample
+        
+        sns.scatterplot(data=norm_data,
+                        x='x',
+                        y='y',
+                        ax=ax,
+                        label=label
+                        )
+
+    # style plot
+    sns.despine()
+    if log == True:
+        plt.xscale('log')
+
+    plt.xlabel('Concentration (µM)')
+    plt.ylabel('RU')
+
+    if save_fig == True:
+        plt.savefig("multi_affinity.png", dpi=300)
+
+    plt.show()
+
+    return fig
 
 
 # =============
