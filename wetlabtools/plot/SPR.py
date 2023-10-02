@@ -120,10 +120,12 @@ def spr_affinity(measured: pd.DataFrame, fitted: pd.DataFrame,
     return fig
     
 
-def fit_sigmoid_function(data, mock_scale='log'):
+def fit_sigmoid_function(data, mock_scale='log', method: str='dogbox', **curve_fit_kwargs):
     '''
     data: pd.DataFrame, data frame with the measured data points (expects columns x and y)
     mock_scale: str, either 'log' or 'lin' - the scale to generate mock data in
+    method: str, optimization for scipy.optimize.curve_fit()
+    curve_fit_kwargs: kwargs passed to scipy.optimize.curve_fit() e.g. maxfev=5000 to increase iterations
     
     This function will fit a sigmoid function to the data and return a data frame with
     x and y values for the fitted function and the ec50 of the fit.
@@ -144,7 +146,8 @@ def fit_sigmoid_function(data, mock_scale='log'):
                                           data['x'],
                                           data['y'],
                                           p0,
-                                          method='dogbox'
+                                          method=method,
+                                          **curve_fit_kwargs
                                          )
 
     ec50 = popt[1]
