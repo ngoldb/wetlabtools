@@ -6,6 +6,7 @@ Module to load, plot, and fit data from SPR experiments.
 import os
 import numpy as np
 import pandas as pd
+import warnings
 
 # plotting
 import seaborn as sns
@@ -23,10 +24,11 @@ from wetlabtools import utils
 # Steady-state affinity data
 # ============================
 
-def load_affinity_data(file: str):
+def load_affinity_data(file: str, omit_concentrations: list=[]):
     '''
     file: str, path to the file.txt with the affinity data
-    
+    omit_concentration: list, list of concentrations to omit
+
     This function loads the measured datapoints of the SPR experiment. It returns 
     a data frame with the x/y points with x being the concentration of ligand and
     y being the measured RU_max values for each ligand concentration.
@@ -48,6 +50,9 @@ def load_affinity_data(file: str):
     df['x'] = df['x'] * 1_000_000
     df['y'] = pd.to_numeric(df['y'])
     df.sort_values('x', ascending=False, inplace=True)
+
+    if omit_concentrations != []:
+        df = df[~df['x'].isin(omit_concentrations)]
     
     return df
 
@@ -79,7 +84,7 @@ def load_affinity_fit(file: str):
     return df_fit
 
 
-def spr_affinity(measured: pd.DataFrame, fitted: pd.DataFrame, 
+def spr_affinity(measured: pd.DataFrame, fitted: pd.DataFrame=pd.DataFrame(), 
                  log: bool=True, save_fig: bool=False, height: int=4, width: int=6):
     '''
     measured: pd.DataFrame, data frame with the measured datapoints (expected columns x and y)
@@ -103,7 +108,8 @@ def spr_affinity(measured: pd.DataFrame, fitted: pd.DataFrame,
                    )
     
     # plot the fit
-    sns.lineplot(data=fitted, x='x', y='y', ax=ax)
+    if not fitted.empty:
+        sns.lineplot(data=fitted, x='x', y='y', ax=ax)
     
     # log x axis and labels
     sns.despine()
@@ -113,7 +119,7 @@ def spr_affinity(measured: pd.DataFrame, fitted: pd.DataFrame,
     plt.ylabel('RU')
 
     if save_fig == True:
-        plt.savefig(f"{sample}_affinity.png", dpi=300)
+        plt.savefig("affinity.png", dpi=300)
 
     plt.show()
 
@@ -170,43 +176,67 @@ def fit_sigmoid_function(data, mock_scale='log', method: str='dogbox', **curve_f
 
 
 def multi_affinity(data_dir: str, 
-                   normalize: bool=True, 
+                   normalize: bool=False, 
+                   rel_scale: bool=False,
                    fit_sigmoid: bool=True,
                    report_kd: bool=True,
                    save_fig: bool=False, 
                    log: bool=True, 
                    height:int=4, 
-                   width: int=6):
+                   width: int=6,
+                   omit_concentrations: list=[],
+                   omit_samples: list=[],
+                   **curve_fit_kwargs):
     """
     data_dir: str, path to the directory containing txt files
     normalize: bool, whether to rescale all data from 0 to 100% of respective RU max
+    rel_scale: bool, whether to scale all plots relative to the max RU (y axis will be 0 - 1)
     save_fig: bool, whether to save the figure
     fit_sigmoid: bool, whether to fit a sigmoid function
     report_kd: bool, whether to print Kd in the legend of the plot
     log: bool, whether or not to plot on logarithmic x-axis
     heigh: int, height of the plot
     wdith: int, width of the plot
+    omit_concentrations: list, list of concentrations to omit from data
+    omit_samples: list, list of samples to omit
+    curve_fit_kwargs: kwargs passed to scipy.optimize.curve_fit() e.g. maxfev=5000 to increase iterations
 
     Function to plot affinity data from multiple experiments and overlay the curves in a single plot.
-    It will parse the directory and collect all txt files containing "affinity" in the file name. It
-    will then load all the data, fit a sigmoid function to the raw data and plot experimental data
-    and the fitted function.
+    It will parse the directory and collect all txt files containing "affinity" in the file name. There
+    are two normalization options available: normalize and rel_scale. Normalize will rescale all plots
+    to a y-axis of 0% to 100% of RUmax of the sample; rel_scale will scale all plots relative to the
+    overall rel_max (on a scale from 0 to 1) - this is preferred if you like to show data together
+    with their respective negative controls.
     """
+
+    # sanity check
+    if normalize and rel_scale:
+        warnings.warn('You are about to do something stupid: you try to use normalize and rel_scale simultaneously! Choose one of those options!')
 
     # parse the directory and collect txt files with 'affinity' in file name
     files = [os.path.join(data_dir, file) 
              for file in os.listdir(data_dir) 
              if file.endswith('.txt') and 'affinity' in file]
 
+    # iterate over all files and load data
+    data = {}
+
+    for file in files:
+        sample = os.path.basename(file).split('_')[0]
+        data[sample] = load_affinity_data(file=file, omit_concentrations=omit_concentrations)
+
+    # get global y max
+    if rel_scale:
+        rel_max = max([data[sample]['y'].max() for sample in data])
+
     # initialize the plot
     fig, ax = plt.subplots(figsize=(width, height))
 
-    # iterate over all files
-    for file in files:
+    for sample in data:
 
-        # load data
-        data = load_affinity_data(file)
-        sample = os.path.basename(file).split('_')[0]
+        # skipping samples
+        if sample in omit_samples:
+            continue
 
         # fit sigmoid function if requested
         if fit_sigmoid:
@@ -215,23 +245,36 @@ def multi_affinity(data_dir: str,
             else:
                 scale = 'lin'
             
-            fitted, kd = fit_sigmoid_function(data, mock_scale=scale)
+            fitted, kd = fit_sigmoid_function(data=data[sample], mock_scale=scale, **curve_fit_kwargs)
 
             if normalize:
                 y_max = fitted['y'].max()
                 y_min = fitted['y'].min()
                 fitted['y'] = fitted['y'].apply(lambda y: utils.normalize_percent_max(y, y_max, y_min))
+            
+            elif rel_scale:
+                fitted['y'] = fitted['y'].apply(lambda y: utils.rel_scale(y, rel_max))
 
             # plot fitted function
             sns.lineplot(data=fitted, x='x', y='y')
 
         # normalize if requested
         if normalize:
-            norm_data = data.copy()
-            y_max = data['y'].max()
-            y_min = data['y'].min()
-            norm_data['y'] = data['y'].apply(lambda y: utils.normalize_percent_max(y, y_max, y_min))
-        
+            norm_data = data[sample].copy()
+            y_max = data[sample]['y'].max()
+            y_min = data[sample]['y'].min()
+            norm_data['y'] = norm_data['y'].apply(lambda y: utils.normalize_percent_max(y, y_max, y_min))
+            ylabel = 'Percent RUmax (%)'
+
+        elif rel_scale:
+            norm_data = data[sample].copy()
+            norm_data['y'] = norm_data['y'].apply(lambda y: utils.rel_scale(y, rel_max))
+            ylabel = 'relative RU'
+
+        else:
+            norm_data = data[sample]
+            ylabel = 'response units (RU)'
+
         # plotting experimental data points
         if report_kd:
             label = f'{sample} (Kd = {round(kd*1_000, 2)} nM)'
@@ -251,7 +294,7 @@ def multi_affinity(data_dir: str,
         plt.xscale('log')
 
     plt.xlabel('Concentration (µM)')
-    plt.ylabel('RU')
+    plt.ylabel(ylabel)
 
     if save_fig == True:
         plt.savefig("multi_affinity.png", dpi=300)
@@ -280,6 +323,11 @@ def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7):
     
     # read data from file
     df = pd.read_csv(file, sep='\t', skipinitialspace=True)
+    to_drop = [col for col in df.columns if 'Fitted' in col]
+    df.drop(columns=to_drop, inplace=True)
+    
+    # drop fitted data if available
+
     columns = df.columns
     done = []
 
