@@ -1,6 +1,6 @@
 """Top-level package for wetlabtools"""
 
-from .plot import *
+from wetlabtools import plot
 
 __author__ = "Nicolas Goldbach"
 __email__ = "nicolas.goldbach@epfl.ch"
