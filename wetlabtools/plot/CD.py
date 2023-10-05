@@ -229,7 +229,10 @@ def cd(data:dict, zooms:list, out_path:str='.', cutoff:float=2.0, mode:str='fade
 
     # color palette
     fire_cmap = matplotlib.colors.LinearSegmentedColormap.from_list('fire', colorcet.fire)
-    plt.register_cmap('colorcet_fire', fire_cmap)
+
+    # register colormap
+    if 'colorcet_fire' not in plt.colormaps():
+        plt.register_cmap('colorcet_fire', fire_cmap)
 
     i = 0
     
