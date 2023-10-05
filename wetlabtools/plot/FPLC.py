@@ -2,9 +2,17 @@
 Module to plot any kind of chromatogram from FPLC (IMAC, SEC, ...)
 """
 
+# general
 import os
-import pandas as pd
+import math
+import warnings
 
+# Data handling and plotting
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Bokeh
 import bokeh.io
 import bokeh.layouts
 import bokeh.models
@@ -170,3 +178,155 @@ def interactive_fplc(csv_path: str, height:int=600, width:int=1_000):
     bokeh.io.show(p)
 
     return None
+
+
+def fplc(data: pd.DataFrame,
+         cond: bool=False,
+         concB: bool=False,
+         fractions: bool=False,
+         min_x: float=None,
+         max_x: float=None,
+         elution: bool=False,
+         height: int=8,
+         width: int=18
+        ):
+    """
+    data: pd.DataFrame, data frame containing the data exported from Unicorn
+    cond: bool, whether to plot conductivity
+    concB: bool, whether to plot the concentration of B
+    fractions: bool, whether to show the fractions
+    min_x: float, start of x axis
+    max_x: float, end of x axis
+    elution: bool, whether to show only elution phase (will overwrite min_x and max_x) 
+    height: int, height of the plot
+    width: int, width of the plot
+    
+    Function to plot chromatograms from FPLC data. Need to import data first using 
+    wetlabtools.plot.import_fplc().
+    """
+    
+    # TODO: only fractions parameter
+    
+    # Warning in case the user tries something stupid
+    if (min_x != None or max_x != None) and elution:
+        warnings.warn('Elution and min_x / max_x used! Elution will overwrite manual x-axis range!')
+    
+    if min_x != None and max_x != None:
+        if min_x > max_x:
+            warnings.warn('min_x > max_x - are you sure you want to flip the x-axis?')
+        
+    # using the elution entry in the logbook for x axis range
+    if elution:
+        log_df = data['Run Log']
+        min_x = int(log_df.loc[log_df['Logbook']=='Elution']['ml'].values[0])
+        try:
+            idx = log_df.loc[log_df['Logbook']=='Elution']['ml'].index[0]
+            max_x = math.ceil(log_df['ml'].loc[idx + 1])
+        except:
+            pass
+    
+    # assigning min and max x if not set
+    if min_x == None and max_x == None:
+        min_x = data['UV']['ml'].min()
+        max_x = data['UV']['ml'].max()
+        
+    elif min_x == None and max_x != None:
+        min_x = data['UV']['ml'].min()
+        
+    elif max_x == None and min_x != None:
+        max_x = data['UV']['ml'].max()
+    
+    # using min_x * 0.05 for both paddings to 
+    # add identical space left and right
+    min_x -= min_x * 0.05
+    max_x += min_x * 0.05
+    
+    # setting up y axis limits
+    uv_max = data[data['UV']['ml'].between(min_x,max_x)]['UV']['mAU'].max()
+    cond_max = data[data['Cond']['ml'].between(min_x,max_x)]['Cond']['mS/cm'].max()
+    
+    # initializing plot
+    fig, ax1 = plt.subplots(figsize=(width,height))
+    fig.subplots_adjust(right=0.75)
+
+    plt.xlabel('Volume (ml)', fontsize=18, fontname='Helvetica')
+    plt.xticks(fontsize=15, fontname='Helvetica')
+
+    # plotting UV280
+    uv = sns.lineplot(data=data[data['UV']['ml'].between(min_x,max_x)]['UV'], 
+                      x='ml', 
+                      y='mAU', 
+                      color='tab:blue', 
+                      ax=ax1
+                     )
+    uv.set_ylim(0-uv_max*0.05, uv_max+uv_max*0.05)
+    ax1.set_ylabel('Absorbance 280nm (mAU)', fontsize=18, fontname='Helvetica', color='tab:blue')
+    ax1.yaxis.set_tick_params(labelsize=15)
+
+    if sum([cond, concB]) == 2:
+        # plotting conductivity
+        ax2 = ax1.twinx()
+        cond = sns.lineplot(data=data['Cond'], x='ml', y='mS/cm', color='tab:orange', ax=ax2)
+        ax2.set_ylim(0-cond_max*0.05, cond_max+cond_max*0.05)
+        ax2.set_ylabel('Conductivity (mS/cm)', fontsize=18, fontname='Helvetica', color='tab:orange')
+        ax2.yaxis.set_tick_params(labelsize=15)
+
+        # plotting %B
+        ax3 = ax1.twinx()
+        ax3.spines.right.set_position(("axes", 1.075))
+        concB = sns.lineplot(data=data['Conc B'],x='ml',y='%',color='green', ax=ax3)
+        ax3.set_ylim(-5, 105)
+        ax3.set_ylabel('Concentration B (%)', fontsize=18, fontname='Helvetica', color='green')
+        ax3.yaxis.set_tick_params(labelsize=15)
+    
+    elif sum([cond, concB]) == 1:
+        ax2 = ax1.twinx()
+        
+        if cond:
+            # plotting conductivity
+            cond = sns.lineplot(data=data['Cond'], x='ml', y='mS/cm', color='tab:orange', ax=ax2)
+            ax2.set_ylim(0-cond_max*0.05, cond_max+cond_max*0.05)
+            ax2.set_ylabel('Conductivity (mS/cm)', fontsize=18, fontname='Helvetica', color='tab:orange')
+            ax2.yaxis.set_tick_params(labelsize=15)
+            
+        elif concB:
+            # plotting concentration B
+            concB = sns.lineplot(data=data['Conc B'],x='ml',y='%',color='green', ax=ax2)
+            ax2.set_ylim(-5, 105)
+            ax2.set_ylabel('Concentration B (%)', fontsize=18, fontname='Helvetica', color='green')
+            ax2.yaxis.set_tick_params(labelsize=15)
+            
+    else:
+        pass
+
+    # plot fractions
+    if fractions:
+        
+        # adjusting fraction labels
+        fraction_volume = data['Fraction'].dropna().loc[1,'ml'] - data['Fraction'].dropna().loc[0,'ml']
+        offset = 0.6 * fraction_volume
+        text_y = uv_max * 0.03
+
+        for row in data['Fraction'].dropna().iterrows():
+            ml = row[1]['ml']
+            fraction = row[1]['Fraction']
+
+            # plotting lines and labels
+            if min_x and max_x:
+                if min_x < ml and ml < max_x:
+                    plt.axvline(ml, ymax=0.08, color='black', alpha=0.5)
+                    ax1.text(x=ml+offset, y=text_y, s=fraction, rotation=90, fontsize=8, horizontalalignment='center')
+
+            elif min_x:
+                if min_x < ml:
+                    plt.axvline(ml, ymax=0.08, color='black', alpha=0.5)
+                    ax1.text(x=ml+offset, y=text_y, s=fraction, rotation=90, fontsize=8, horizontalalignment='center')
+
+            elif max_x:
+                if ml < max_x:
+                    plt.axvline(ml, ymax=0.08, color='black', alpha=0.5)
+                    ax1.text(x=ml+offset, y=text_y, s=fraction, rotation=90, fontsize=8, horizontalalignment='center')
+    
+    plt.xlim(min_x, max_x)
+    
+    return fig

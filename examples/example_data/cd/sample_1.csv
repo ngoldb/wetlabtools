@@ -11,7 +11,7 @@ Remarks:
 #HV (CDDC channel): 0 v
 #Time per point: 0.5 s
 #MultiCellAutoChanger: Enabled
-#Sample1: CLN1_14
+#Sample1: protein_1
 #Cell1 type: 
 #Cell1 Pathlength: 10 mm
 #Temperature: 24.96 C

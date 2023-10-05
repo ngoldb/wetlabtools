@@ -320,6 +320,7 @@ def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7):
     
     # initialize plot
     fig, ax = plt.subplots(figsize=(width, height))
+    sns.set(palette='colorblind', style='ticks')
     
     # read data from file
     df = pd.read_csv(file, sep='\t', skipinitialspace=True)
@@ -354,8 +355,6 @@ def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7):
             except: pass
 
     # adjusting plot
-    sns.set(palette='colorblind', style='ticks')
-    
     plt.xlabel('time (s)')
     plt.ylabel('Response units')
     plt.title(sample)
@@ -369,4 +368,4 @@ def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7):
     
     plt.close('all')
     
-    return None
+    return fig
