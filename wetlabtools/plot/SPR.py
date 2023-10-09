@@ -175,7 +175,8 @@ def fit_sigmoid_function(data, mock_scale='log', method: str='dogbox', **curve_f
     return df_fit, ec50
 
 
-def multi_affinity(data_dir: str, 
+def multi_affinity(data_dir: str='', 
+                   path_list: list=[],
                    normalize: bool=False, 
                    rel_scale: bool=False,
                    fit_sigmoid: bool=True,
@@ -189,6 +190,7 @@ def multi_affinity(data_dir: str,
                    **curve_fit_kwargs):
     """
     data_dir: str, path to the directory containing txt files
+    path_list: list, list of paths to txt files to plot (instead of data_dir)
     normalize: bool, whether to rescale all data from 0 to 100% of respective RU max
     rel_scale: bool, whether to scale all plots relative to the max RU (y axis will be 0 - 1)
     save_fig: bool, whether to save the figure
@@ -209,14 +211,29 @@ def multi_affinity(data_dir: str,
     with their respective negative controls.
     """
 
-    # sanity check
+    # sanity checks
     if normalize and rel_scale:
         warnings.warn('You are about to do something stupid: you try to use normalize and rel_scale simultaneously! Choose one of those options!')
 
-    # parse the directory and collect txt files with 'affinity' in file name
-    files = [os.path.join(data_dir, file) 
-             for file in os.listdir(data_dir) 
-             if file.endswith('.txt') and 'affinity' in file]
+    try:
+        if data_dir == '' and path_list == []:
+            raise IOError('I/O error: You have to provide input data - you can use either of the parameters data_dir or path_list')
+
+        if data_dir != '' and path_list != []:
+            raise IOError('You provided two input formats - use either data_dir or path_list')
+    
+    except IOError as e:
+        print(e)
+        return None
+    
+    # defining list of input files
+    if path_list:
+        files = path_list
+
+    else:
+        files = [os.path.join(data_dir, file) 
+                for file in os.listdir(data_dir) 
+                if file.endswith('.txt') and 'affinity' in file]
 
     # iterate over all files and load data
     data = {}
