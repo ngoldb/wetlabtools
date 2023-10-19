@@ -14,7 +14,7 @@ import colorcet
 
 def load_CD_melt(data_file: str):
     """
-    fasta_file: str, path to the ProData csv file
+    data_file: str, path to the ProData csv file
 
     Function to read ProData csv file and process the data. Will return a dictonary containing CD, HV and Absorbance data. Each data block is stored in dicts.
     If a path to a buffer csv file is provided, the background will automatically be subtracted from the CD data
