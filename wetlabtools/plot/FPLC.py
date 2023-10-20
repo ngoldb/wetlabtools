@@ -23,9 +23,9 @@ bokeh.io.output_notebook()
 
 
 
-def import_fplc(sec_data: str):
+def import_fplc(fplc_data: str) -> pd.DataFrame:
     """
-    sec_data: str, path to the csv file with FPLC data
+    fplc_data: str, path to the csv file with FPLC data
     
     Function to load FPLC data and fix the column headings. Will return a Data Frame.
     """
@@ -34,7 +34,7 @@ def import_fplc(sec_data: str):
     # fixed csv is written to temporary file
     tmp_file = 'wetlabtools_tmp.csv'
 
-    with open(sec_data, 'r', encoding='utf16') as read_file, open(tmp_file, 'w') as write_file:
+    with open(fplc_data, 'r', encoding='utf16') as read_file, open(tmp_file, 'w') as write_file:
         for line in read_file:
             
             if 'UV' in line:
@@ -66,7 +66,7 @@ def import_fplc(sec_data: str):
 
 
 
-def interactive_fplc(csv_path: str, height:int=600, width:int=1_000):
+def interactive_fplc(csv_path: str, height:int=600, width:int=1_000) -> None:
     """
     csv_path: str, path to the csv file containing FPLC data
     height: int, height of the plot
@@ -188,7 +188,9 @@ def fplc(data: pd.DataFrame,
          max_x: float=None,
          elution: bool=False,
          height: int=8,
-         width: int=18
+         width: int=18,
+         save_png: str='', 
+         sample: str=''
         ):
     """
     data: pd.DataFrame, data frame containing the data exported from Unicorn
@@ -200,12 +202,12 @@ def fplc(data: pd.DataFrame,
     elution: bool, whether to show only elution phase (will overwrite min_x and max_x) 
     height: int, height of the plot
     width: int, width of the plot
+    save_png: str, path where to save the plot. Plot not saved if empty
+    sample: str, sample name, will be set as figure title if provided
     
     Function to plot chromatograms from FPLC data. Need to import data first using 
     wetlabtools.plot.import_fplc().
     """
-    
-    # TODO: only fractions parameter
     
     # Warning in case the user tries something stupid
     if (min_x != None or max_x != None) and elution:
@@ -328,5 +330,13 @@ def fplc(data: pd.DataFrame,
                     ax1.text(x=ml+offset, y=text_y, s=fraction, rotation=90, fontsize=8, horizontalalignment='center')
     
     plt.xlim(min_x, max_x)
+
+    # setting plot title if sample name is provided
+    if sample != '':
+        plt.title(sample, fontsize=20)
+
+    # saving figure if path is provided
+    if save_png != '':
+        plt.savefig(save_png, dpi=300)
     
     return fig
