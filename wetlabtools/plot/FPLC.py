@@ -494,7 +494,7 @@ def fplc_summary(directory: str, save_figure: bool=False):
                         fontname='Helvetica')
 
     if save_figure:
-        plt.savefig(os.path.join(directory, 'summary.png'), dpi=300)
+        plt.savefig(os.path.join(directory, 'summary.png'), dpi=300, bbox_inches='tight')
 
     plt.show()
     return None
