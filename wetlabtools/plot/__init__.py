@@ -2,7 +2,7 @@
 
 from wetlabtools.plot.CD import cd, load_CD_data
 from wetlabtools.plot.MALS import secmals
-from wetlabtools.plot.FPLC import interactive_fplc, import_fplc, fplc
+from wetlabtools.plot.FPLC import interactive_fplc, import_fplc, fplc, fplc_summary
 from wetlabtools.plot.SPR import spr_kinetics, spr_affinity, load_affinity_data, load_affinity_fit, fit_sigmoid_function, multi_affinity
 
 __author__ = "Nicolas Goldbach"

@@ -180,33 +180,28 @@ def interactive_fplc(csv_path: str, height:int=600, width:int=1_000) -> None:
     return None
 
 
-def fplc(data: pd.DataFrame,
-         cond: bool=False,
-         concB: bool=False,
-         fractions: bool=False,
-         min_x: float=None,
-         max_x: float=None,
-         elution: bool=False,
-         height: int=8,
-         width: int=18,
-         save_png: str='', 
-         sample: str=''
-        ):
+def plot_subplots(data: pd.DataFrame,
+                  ax1,
+                  cond: bool=False,
+                  concB: bool=False,
+                  fractions: bool=False,
+                  min_x: float=None,
+                  max_x: float=None,
+                  elution: bool=False,
+                  sample: str=''
+                  ):
     """
     data: pd.DataFrame, data frame containing the data exported from Unicorn
+    ax1: axes object to plot on
     cond: bool, whether to plot conductivity
     concB: bool, whether to plot the concentration of B
     fractions: bool, whether to show the fractions
     min_x: float, start of x axis
     max_x: float, end of x axis
     elution: bool, whether to show only elution phase (will overwrite min_x and max_x) 
-    height: int, height of the plot
-    width: int, width of the plot
-    save_png: str, path where to save the plot. Plot not saved if empty
     sample: str, sample name, will be set as figure title if provided
     
-    Function to plot chromatograms from FPLC data. Need to import data first using 
-    wetlabtools.plot.import_fplc().
+    Function to plot a chromatogram on a given figure
     """
     
     # Warning in case the user tries something stupid
@@ -246,13 +241,9 @@ def fplc(data: pd.DataFrame,
     # setting up y axis limits
     uv_max = data[data['UV']['ml'].between(min_x,max_x)]['UV']['mAU'].max()
     cond_max = data[data['Cond']['ml'].between(min_x,max_x)]['Cond']['mS/cm'].max()
-    
-    # initializing plot
-    fig, ax1 = plt.subplots(figsize=(width,height))
-    fig.subplots_adjust(right=0.75)
 
-    plt.xlabel('Volume (ml)', fontsize=18, fontname='Helvetica')
-    plt.xticks(fontsize=15, fontname='Helvetica')
+    ax1.set_xlabel('Volume (ml)', fontsize=18, fontname='Helvetica')
+    ax1.tick_params(axis='x', labelsize=15)
 
     # plotting UV280
     uv = sns.lineplot(data=data[data['UV']['ml'].between(min_x,max_x)]['UV'], 
@@ -316,27 +307,194 @@ def fplc(data: pd.DataFrame,
             # plotting lines and labels
             if min_x and max_x:
                 if min_x < ml and ml < max_x:
-                    plt.axvline(ml, ymax=0.08, color='black', alpha=0.5)
+                    ax1.axvline(ml, ymax=0.08, color='black', alpha=0.5)
                     ax1.text(x=ml+offset, y=text_y, s=fraction, rotation=90, fontsize=8, horizontalalignment='center')
 
             elif min_x:
                 if min_x < ml:
-                    plt.axvline(ml, ymax=0.08, color='black', alpha=0.5)
+                    ax1.axvline(ml, ymax=0.08, color='black', alpha=0.5)
                     ax1.text(x=ml+offset, y=text_y, s=fraction, rotation=90, fontsize=8, horizontalalignment='center')
 
             elif max_x:
                 if ml < max_x:
-                    plt.axvline(ml, ymax=0.08, color='black', alpha=0.5)
+                    ax1.axvline(ml, ymax=0.08, color='black', alpha=0.5)
                     ax1.text(x=ml+offset, y=text_y, s=fraction, rotation=90, fontsize=8, horizontalalignment='center')
     
-    plt.xlim(min_x, max_x)
+    ax1.set_xlim([min_x, max_x])
 
     # setting plot title if sample name is provided
     if sample != '':
-        plt.title(sample, fontsize=20)
+        ax1.set_title(sample, fontsize=18)
+    
+    return None
+
+
+def fplc(data: pd.DataFrame,
+         cond: bool=False,
+         concB: bool=False,
+         fractions: bool=False,
+         min_x: float=None,
+         max_x: float=None,
+         elution: bool=False,
+         height: int=8,
+         width: int=18,
+         save_png: str='', 
+         sample: str=''
+        ):
+    """
+    data: pd.DataFrame, data frame containing the data exported from Unicorn
+    cond: bool, whether to plot conductivity
+    concB: bool, whether to plot the concentration of B
+    fractions: bool, whether to show the fractions
+    min_x: float, start of x axis
+    max_x: float, end of x axis
+    elution: bool, whether to show only elution phase (will overwrite min_x and max_x) 
+    height: int, height of the plot
+    width: int, width of the plot
+    save_png: str, path where to save the plot. Plot not saved if empty
+    sample: str, sample name, will be set as figure title if provided
+    
+    Function to plot chromatograms from FPLC data. Need to import data first using 
+    wetlabtools.plot.import_fplc().
+    """
+    
+    # initializing plot
+    fig, ax1 = plt.subplots(figsize=(width,height))
+    fig.subplots_adjust(right=0.75)
+
+    # plotting the chromatogram
+    plot_subplots(data=data,
+                  ax1=ax1,
+                  cond=cond,
+                  concB=concB,
+                  fractions=fractions,
+                  min_x=min_x,
+                  max_x=max_x,
+                  elution=elution,
+                  sample=sample
+                  )
 
     # saving figure if path is provided
     if save_png != '':
-        plt.savefig(save_png, dpi=300)
+        plt.savefig(save_png, dpi=300, bbox_inches='tight')
     
     return fig
+
+
+def fplc_summary(directory: str, save_figure: bool=False):
+    """
+    directory: str, path to the directory containing the chromatograms
+    save_figure: bool, save the figure? Will be saved in the input directory
+
+    Function to plot a panel containing His and SEC chromatograms of a protein purification.
+    This function expects IMAC and SEC chromatograms for each sample in the input directory.
+    Files should be named like this XXX_sample-name_His and XXX_sample-name_Sec. The script 
+    will then automatically copy the sample name. If there is only IMAC or SEC data for one
+    sample, the function should still work. The panel will be saved in the same directory.
+    """
+
+    # collect files
+    files = [file for file in os.listdir(directory) if file.endswith('.csv')]
+
+    # collect sample names
+    samples = set([file.split('_')[-2] for file in files])
+
+    # create subplots: 1 row for each sample, 2 columns for imac and sec
+    fig, ax = plt.subplots(len(samples), 2, figsize=(20,5*len(samples)))
+
+    # adjusting the padding around the subplots
+    plt.subplots_adjust(left=0.1,
+                        bottom=0.1, 
+                        right=1.25, 
+                        top=0.9, 
+                        wspace=0.35, 
+                        hspace=0.4)
+        
+    for i, sample in enumerate(samples):
+        
+        # setting axes
+        if len(samples) == 1:
+            ax_imac = ax[0]
+            ax_sec = ax[1]
+            ax_imac.set_title('IMAC', fontsize=24, fontname='Helvetica')
+            ax_sec.set_title('SEC', fontsize=24, fontname='Helvetica')
+        
+        else:
+            ax_imac = ax[i, 0]
+            ax_sec = ax[i, 1]
+            if i == 0:
+                ax[i, 0].set_title('IMAC', fontsize=24, fontname='Helvetica')
+                ax[i, 1].set_title('SEC', fontsize=24, fontname='Helvetica')
+            
+        # find data files
+        try:
+            imac = [file for file in files if sample in file and 'his'.casefold() in file.casefold()][0]
+        except IndexError:
+            print(f'did not find a IMAC chromatogram file for {sample}')
+            imac = None
+        
+        try:
+            sec =  [file for file in files if sample in file and 'sec'.casefold() in file.casefold()][0]
+        except IndexError:
+            print(f'did not find a SEC chromatogram file for {sample}')
+            sec = None
+
+        # importing data and plotting
+        if imac == None:
+            # removing plot
+            ax_imac.spines['top'].set_visible(False)
+            ax_imac.spines['right'].set_visible(False)
+            ax_imac.spines['bottom'].set_color('none')
+            ax_imac.spines['left'].set_color('none')
+            ax_imac.xaxis.set_ticks_position('none')
+            ax_imac.yaxis.set_ticks_position('none')
+            ax_imac.set_xticks([])
+            ax_imac.set_yticks([])
+            
+        else:
+            imac_data = import_fplc(os.path.join(directory, imac))
+            plot_subplots(data=imac_data,
+                          ax1=ax_imac,
+                          elution=True,
+                          cond=True,
+                          concB=True,
+                          fractions=True
+                          )
+            
+            # adding sample description
+            ax_imac.text(0.02, 0.9, sample, 
+                        transform=ax_imac.transAxes, 
+                        fontsize=16, 
+                        fontname='Helvetica')
+        
+        if sec == None:
+            ax_sec.spines['top'].set_visible(False)
+            ax_sec.spines['right'].set_visible(False)
+            ax_sec.spines['bottom'].set_color('none')
+            ax_sec.spines['left'].set_color('none')
+            ax_sec.xaxis.set_ticks_position('none')
+            ax_sec.yaxis.set_ticks_position('none')
+            ax_sec.set_xticks([])
+            ax_sec.set_yticks([])
+            
+        else:
+            sec_data = import_fplc(os.path.join(directory, sec))
+            plot_subplots(data=sec_data,
+                          ax1=ax_sec,
+                          elution=False,
+                          cond=False,
+                          concB=False,
+                          fractions=True
+                          )
+            
+            # adding sample description
+            ax_sec.text(0.02, 0.9, sample, 
+                        transform=ax_sec.transAxes, 
+                        fontsize=16, 
+                        fontname='Helvetica')
+
+    if save_figure:
+        plt.savefig(os.path.join(directory, 'summary.png'), dpi=300)
+
+    plt.show()
+    return None
