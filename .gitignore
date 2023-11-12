@@ -161,3 +161,6 @@ cython_debug/
 
 # getting rid of this stupid .DS_Store file from MacOS
 **/.DS_Store
+
+# vscode configurations
+.vscode
