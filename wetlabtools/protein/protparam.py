@@ -123,10 +123,12 @@ class Protein(object):
 
 
 
-def batch_prot_param(fasta_file: str, csv: str='') -> pd.DataFrame:
+def batch_prot_param(fasta_file: str, csv: str='', n_term: str='', c_term: str='') -> pd.DataFrame:
     """
     fasta_file: str, path to the fasta file with the protein sequences (1-letter code)
     csv: str, will write a csv file to this file if provided
+    n_term: str, amino acid sequence to add to the N-terminus of the protein (e.g. 'M')
+    c_term: str, amino acid sequence to add to the C-terminus of the protein (e.g. 'GGSHHHHHH')
 
     Function to batch-process a list of sequences in a fasta file and return a 
     dataframe with ProtParam output. It will save a csv file if requested.
