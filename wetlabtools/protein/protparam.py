@@ -151,7 +151,8 @@ def batch_prot_param(fasta_file: str, csv: str='', n_term: str='', c_term: str='
         name = record.id
 
         # create protein from sequence
-        protein = Protein(record.seq)
+        sequence = n_term + record.seq + c_term
+        protein = Protein(sequence)
         prot_param = protein.print_protparam(quiet=True)
         tmp_df = pd.DataFrame(prot_param, index=[name])
 
