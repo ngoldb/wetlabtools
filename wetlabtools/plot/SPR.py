@@ -501,7 +501,7 @@ def spr_summary(data_dir: str, save_fig: bool=False, sensorgram_legend: bool=Fal
     fig, ax = plt.subplots(len(samples), 2, figsize=(20,5*len(samples)))
 
     for i, sample in enumerate(samples):
-        print(sample)
+        
         # setting axes
         if len(samples) == 1:
             ax_kinetics = ax[0]
