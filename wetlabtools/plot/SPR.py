@@ -324,12 +324,13 @@ def multi_affinity(data_dir: str='',
 # =============
 # Kinetics
 # =============
-def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7):
+def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7, show_figure: bool=True):
     '''
     file: str, path to the .txt file containing the recorded sensorgram
     save_fig: bool, whether to save the plot to a file
     height: int, height of the plot
     width: int, width of the plot
+    show_figure: bool, whether to show the figure
     
     This function will read the data from the provided data file and will plot
     the sensorgram of the respective sample.
@@ -368,7 +369,7 @@ def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7):
                 done.append(column)
                 done.append(column.replace(series, mapping[series]))
 
-                g = sns.lineplot(df, x=cols['X'], y=cols['Y'], label=conc)
+                g = sns.lineplot(df, x=cols['X'], y=cols['Y'], label=conc, ax=ax)
             except: pass
 
     # adjusting plot
@@ -380,9 +381,201 @@ def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7):
     
     if save_fig:
         plt.savefig(f"{sample}_sensorgram.png", dpi=300)
-        
-    plt.show()
+
+    if show_figure:    
+        plt.show()    
     
     plt.close('all')
-    
+        
     return fig
+
+
+
+# =============
+# Summary
+# =============
+def draw_sensorgram(file: str, ax, legend: bool) -> None:
+    """
+    file: path to the data file
+    ax: matplotlib axes object
+    legend: bool, whether to show legend
+
+    Plot sensorgram to ax
+    """
+    sns.set(palette='colorblind', style='ticks')
+    
+    # read data from file
+    df = pd.read_csv(file, sep='\t', skipinitialspace=True)
+    to_drop = [col for col in df.columns if 'Fitted' in col]
+    df.drop(columns=to_drop, inplace=True)
+    
+    if legend == True:
+        legend = 'auto'
+
+    columns = df.columns
+    done = []
+
+    mapping = {'X':'Y', 'Y':'X'}
+
+    for column in columns:
+        if column in done:
+            pass
+        else:
+            try:
+                cols = {'X':'','Y':''}
+
+                conc = column.split(';')[5].strip().strip('Conc').split('_')[0].strip()
+                series = column.split(';')[-1].split('_')[-1].strip()
+
+                cols[series] = column
+                cols[mapping[series]] = column.replace(series, mapping[series])
+
+                done.append(column)
+                done.append(column.replace(series, mapping[series]))
+
+                g = sns.lineplot(df, x=cols['X'], y=cols['Y'], label=conc, ax=ax, legend=legend)
+            except: pass
+
+    ax.set_xlabel('time (s)', fontsize=18, fontname='Helvetica')
+    ax.set_ylabel('RU', fontsize=18, fontname='Helvetica')
+
+    return None
+
+
+
+def draw_steady_state(exp_data: pd.DataFrame, fitted: pd.DataFrame, ax, log: bool=True) -> None:
+    """
+    exp_data: pandas DataFrame, experimental data
+    fitted: pandas DataFrame, fit to experimental data
+    ax: axes to plot on
+    log: bool, whether to plot on log y axis
+
+    Function to plot steady state affinity data
+    """
+
+    # plot the measured datapoints
+    sns.scatterplot(data=exp_data,
+                    x='x',
+                    y='y',
+                    ax=ax
+                   )
+    
+    # plot the fit
+    if not fitted.empty:
+        sns.lineplot(data=fitted, x='x', y='y', ax=ax)
+    
+    # log x axis and labels
+    sns.despine()
+    if log == True:
+        ax.set_xscale('log')
+    
+    ax.set_xlabel('Concentration (µM)', fontsize=18, fontname='Helvetica')
+    ax.set_ylabel('RU', fontsize=18, fontname='Helvetica')
+
+    return None
+
+
+
+def spr_summary(data_dir: str, save_fig: bool=False, sensorgram_legend: bool=False, aff_scale: str='log'):
+    """
+    data_dir: str, path to the directory containing the data
+    save_fig: bool, whether to save the figure or not
+    sensorgram_legend: bool, whether to show legend in the sensorgram
+    aff_scale: str, scale of the affinity plot x-axis (log or lin)
+
+    Function to plot kinetics and affinity plots from SPR data collected on 
+    Biacore 8. It will parse the data directory and plot kinetics and affinity
+    for each sample next to each other. The files need to be named like this:
+    sample-name_<affinity/kinetics>.txt
+    """
+
+    # collect all files
+    files = [os.path.join(data_dir, file) 
+             for file in os.listdir(data_dir) 
+             if file.endswith('.txt')]
+    
+    # get (unique) sample names
+    samples = set(os.path.basename(file).split('_')[0] for file in files)
+
+    # create subplots: 1 row for each sample, 2 columns for imac and sec
+    fig, ax = plt.subplots(len(samples), 2, figsize=(20,5*len(samples)))
+
+    for i, sample in enumerate(samples):
+        print(sample)
+        # setting axes
+        if len(samples) == 1:
+            ax_kinetics = ax[0]
+            ax_affinity = ax[1]
+            ax_kinetics.set_title('Sensorgram', fontsize=24, fontname='Helvetica')
+            ax_affinity.set_title('Affinity', fontsize=24, fontname='Helvetica')
+        
+        else:
+            ax_kinetics = ax[i, 0]
+            ax_affinity = ax[i, 1]
+            if i == 0:
+                ax[i, 0].set_title('Sensorgram', fontsize=24, fontname='Helvetica')
+                ax[i, 1].set_title('Affinity', fontsize=24, fontname='Helvetica')
+            
+        # find data files
+        try:
+            kinetics = [file for file in files if sample in file and 'kinetics'.casefold() in file.casefold()][0]
+        except IndexError:
+            print(f'did not find a IMAC chromatogram file for {sample}')
+            kinetics = None
+        
+        try:
+            affinity =  [file for file in files if sample in file and 'affinity'.casefold() in file.casefold()][0]
+        except IndexError:
+            print(f'did not find a SEC chromatogram file for {sample}')
+            affinity = None
+
+        # importing data and plotting
+        if kinetics == None:
+            # removing plot
+            ax_kinetics.spines['top'].set_visible(False)
+            ax_kinetics.spines['right'].set_visible(False)
+            ax_kinetics.spines['bottom'].set_color('none')
+            ax_kinetics.spines['left'].set_color('none')
+            ax_kinetics.xaxis.set_ticks_position('none')
+            ax_kinetics.yaxis.set_ticks_position('none')
+            ax_kinetics.set_xticks([])
+            ax_kinetics.set_yticks([])
+            
+        else:
+            draw_sensorgram(file=kinetics, ax=ax_kinetics, legend=sensorgram_legend)
+            
+            # adding sample description
+            ax_kinetics.text(0.02, 0.9, sample, 
+                        transform=ax_kinetics.transAxes, 
+                        fontsize=16, 
+                        fontname='Helvetica')
+        
+        if affinity == None:
+            ax_affinity.spines['top'].set_visible(False)
+            ax_affinity.spines['right'].set_visible(False)
+            ax_affinity.spines['bottom'].set_color('none')
+            ax_affinity.spines['left'].set_color('none')
+            ax_affinity.xaxis.set_ticks_position('none')
+            ax_affinity.yaxis.set_ticks_position('none')
+            ax_affinity.set_xticks([])
+            ax_affinity.set_yticks([])
+            
+        else:
+            affinity_data = load_affinity_data(file=affinity)
+            fitted, kd = fit_sigmoid_function(affinity_data, mock_scale=aff_scale)
+            
+            draw_steady_state(exp_data=affinity_data, fitted=fitted, ax=ax_affinity)
+
+            # adding sample description
+            ax_affinity.text(0.02, 0.9, sample+f'\nKd = {round(kd, 3)} µM', 
+                             transform=ax_affinity.transAxes, 
+                             fontsize=16, 
+                             fontname='Helvetica')
+            
+    if save_fig:
+        pass
+    
+    plt.show()
+    plt.close('all')
+
+    return None
