@@ -10,6 +10,7 @@ cd ~/wetlabtools
 conda env create -f wetlabtools.yml
 ```
 For some reason installing the environment only works with anaconda, but not with miniconda...
+
 Activate the environment and install the downloaded package using pip (make sure you are in the directory above the package):
 ```
 conda activate wetlabtools
