@@ -44,7 +44,9 @@ class Protein(object):
                 seq = seq.upper()
 
         if letter_code == 1:
+            # convert sequence to capital and remove stop codon if present
             seq = seq.upper()
+            seq = seq.strip('*')
 
             for aa in seq:
                 if aa.upper() not in utils.aa_1_letter:
