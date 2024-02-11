@@ -392,9 +392,9 @@ def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7, s
     if save_fig == True:
         # there must be a nore elegant way
         try:
-            fname = f'affinity.{save_kwargs["format"]}'
+            fname = f'kinetics.{save_kwargs["format"]}'
         except KeyError:
-            fname = 'affinity.png'
+            fname = 'kinetics.png'
 
         plt.savefig(fname, **save_kwargs)
         print(f'saved as {fname}')
