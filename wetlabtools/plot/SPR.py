@@ -85,7 +85,7 @@ def load_affinity_fit(file: str):
 
 
 def spr_affinity(measured: pd.DataFrame, fitted: pd.DataFrame=pd.DataFrame(), 
-                 log: bool=True, save_fig: bool=False, height: int=4, width: int=6,
+                 log: bool=True, save_fig: bool=False, height: int=4, width: int=6, ylim: list=[],
                  **save_kwargs):
     '''
     measured: pd.DataFrame, data frame with the measured datapoints (expected columns x and y)
@@ -94,6 +94,7 @@ def spr_affinity(measured: pd.DataFrame, fitted: pd.DataFrame=pd.DataFrame(),
     save_fig: bool, whether to save the plot to a file
     height: int, height of the plot
     width: int, width of the plot
+    ylim: list, limits of y axis (automatic if empty)
     **save_kwargs: keyword arguments passed to plt.savefig()
 
     Function to plot affinity data from Biacore Insight software
@@ -112,6 +113,9 @@ def spr_affinity(measured: pd.DataFrame, fitted: pd.DataFrame=pd.DataFrame(),
     # plot the fit
     if not fitted.empty:
         sns.lineplot(data=fitted, x='x', y='y', ax=ax)
+
+    if ylim:
+        plt.ylim(ylim)
     
     # log x axis and labels
     sns.despine()
@@ -333,13 +337,15 @@ def multi_affinity(data_dir: str='',
 # =============
 # Kinetics
 # =============
-def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7, show_figure: bool=True, **save_kwargs):
+def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7, 
+                 show_figure: bool=True, ylim: list=[], **save_kwargs):
     '''
     file: str, path to the .txt file containing the recorded sensorgram
     save_fig: bool, whether to save the plot to a file
     height: int, height of the plot
     width: int, width of the plot
     show_figure: bool, whether to show the figure
+    ylim: list, y-axis limits (automatic if empty)
     save_kwargs: kwargs passed to plt.savefig
     
     This function will read the data from the provided data file and will plot
@@ -389,6 +395,9 @@ def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7, s
     sns.despine()
     plt.legend(frameon=False)
     
+    if ylim:
+        plt.ylim(ylim)
+
     if save_fig == True:
         # there must be a nore elegant way
         try:
