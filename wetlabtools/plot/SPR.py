@@ -85,7 +85,8 @@ def load_affinity_fit(file: str):
 
 
 def spr_affinity(measured: pd.DataFrame, fitted: pd.DataFrame=pd.DataFrame(), 
-                 log: bool=True, save_fig: bool=False, height: int=4, width: int=6):
+                 log: bool=True, save_fig: bool=False, height: int=4, width: int=6,
+                 **save_kwargs):
     '''
     measured: pd.DataFrame, data frame with the measured datapoints (expected columns x and y)
     fitted: pd.DataFrame, data frame with the data point of the calculated fit (expected columns x and y)
@@ -93,6 +94,7 @@ def spr_affinity(measured: pd.DataFrame, fitted: pd.DataFrame=pd.DataFrame(),
     save_fig: bool, whether to save the plot to a file
     height: int, height of the plot
     width: int, width of the plot
+    **save_kwargs: keyword arguments passed to plt.savefig()
 
     Function to plot affinity data from Biacore Insight software
     '''
@@ -119,7 +121,14 @@ def spr_affinity(measured: pd.DataFrame, fitted: pd.DataFrame=pd.DataFrame(),
     plt.ylabel('RU')
 
     if save_fig == True:
-        plt.savefig("affinity.png", dpi=300)
+        # there must be a nore elegant way
+        try:
+            fname = f'affinity.{save_kwargs["format"]}'
+        except KeyError:
+            fname = 'affinity.png'
+
+        plt.savefig(fname, **save_kwargs)
+        print(f'saved as {fname}')
 
     plt.show()
 
@@ -324,13 +333,14 @@ def multi_affinity(data_dir: str='',
 # =============
 # Kinetics
 # =============
-def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7, show_figure: bool=True):
+def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7, show_figure: bool=True, **save_kwargs):
     '''
     file: str, path to the .txt file containing the recorded sensorgram
     save_fig: bool, whether to save the plot to a file
     height: int, height of the plot
     width: int, width of the plot
     show_figure: bool, whether to show the figure
+    save_kwargs: kwargs passed to plt.savefig
     
     This function will read the data from the provided data file and will plot
     the sensorgram of the respective sample.
@@ -379,8 +389,15 @@ def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7, s
     sns.despine()
     plt.legend(frameon=False)
     
-    if save_fig:
-        plt.savefig(f"{sample}_sensorgram.png", dpi=300)
+    if save_fig == True:
+        # there must be a nore elegant way
+        try:
+            fname = f'affinity.{save_kwargs["format"]}'
+        except KeyError:
+            fname = 'affinity.png'
+
+        plt.savefig(fname, **save_kwargs)
+        print(f'saved as {fname}')
 
     if show_figure:    
         plt.show()    
@@ -402,8 +419,8 @@ def draw_sensorgram(file: str, ax, legend: bool) -> None:
 
     Plot sensorgram to ax
     """
-    sns.set(palette='colorblind', style='ticks')
-    
+    sns.set(palette='colorblind', style='ticks', rc={'axes.linewidth': 2})
+
     # read data from file
     df = pd.read_csv(file, sep='\t', skipinitialspace=True)
     to_drop = [col for col in df.columns if 'Fitted' in col]
@@ -452,6 +469,7 @@ def draw_steady_state(exp_data: pd.DataFrame, fitted: pd.DataFrame, ax, log: boo
 
     Function to plot steady state affinity data
     """
+    sns.set(palette='colorblind', style='ticks', rc={'axes.linewidth': 2})
 
     # plot the measured datapoints
     sns.scatterplot(data=exp_data,
@@ -469,8 +487,8 @@ def draw_steady_state(exp_data: pd.DataFrame, fitted: pd.DataFrame, ax, log: boo
     if log == True:
         ax.set_xscale('log')
     
-    ax.set_xlabel('Concentration (µM)', fontsize=18, fontname='Helvetica')
-    ax.set_ylabel('RU', fontsize=18, fontname='Helvetica')
+    ax.set_xlabel('Concentration (µM)', fontsize=16, fontname='Helvetica')
+    ax.set_ylabel('RU', fontsize=16, fontname='Helvetica')
 
     return None
 
@@ -489,6 +507,9 @@ def spr_summary(data_dir: str, save_fig: bool=False, sensorgram_legend: bool=Fal
     sample-name_<affinity/kinetics>.txt
     """
 
+    # TODO: fix styling of the plots (x- and y-axis linewidth, fontsize of the xtick labels)
+    #       currently these settings only affect the very last plot of the figure (bottom left)
+
     # collect all files
     files = [os.path.join(data_dir, file) 
              for file in os.listdir(data_dir) 
@@ -499,34 +520,49 @@ def spr_summary(data_dir: str, save_fig: bool=False, sensorgram_legend: bool=Fal
 
     # create subplots: 1 row for each sample, 2 columns for imac and sec
     fig, ax = plt.subplots(len(samples), 2, figsize=(20,5*len(samples)))
+    
+    # adjusting padding
+    plt.subplots_adjust(left=0.05,
+                        bottom=0.05, 
+                        right=1, 
+                        top=0.9, 
+                        wspace=0.2, 
+                        hspace=0.2)
+    
+    # fontsize
+    """
+    for axs in ax:
+        axs.tick_params(axis='x', labelsize=12)
+        axs.tick_params(axis='y', labelsize=12)
+    """
 
     for i, sample in enumerate(samples):
-        
+
         # setting axes
         if len(samples) == 1:
             ax_kinetics = ax[0]
             ax_affinity = ax[1]
-            ax_kinetics.set_title('Sensorgram', fontsize=24, fontname='Helvetica')
-            ax_affinity.set_title('Affinity', fontsize=24, fontname='Helvetica')
+            ax_kinetics.set_title('Sensorgram', fontsize=20, fontname='Helvetica')
+            ax_affinity.set_title('Affinity', fontsize=20, fontname='Helvetica')
         
         else:
             ax_kinetics = ax[i, 0]
             ax_affinity = ax[i, 1]
             if i == 0:
-                ax[i, 0].set_title('Sensorgram', fontsize=24, fontname='Helvetica')
-                ax[i, 1].set_title('Affinity', fontsize=24, fontname='Helvetica')
+                ax[i, 0].set_title('Sensorgram', fontsize=20, fontname='Helvetica')
+                ax[i, 1].set_title('Affinity', fontsize=20, fontname='Helvetica')
             
         # find data files
         try:
             kinetics = [file for file in files if sample in file and 'kinetics'.casefold() in file.casefold()][0]
         except IndexError:
-            print(f'did not find a IMAC chromatogram file for {sample}')
+            print(f'did not find kinetics file for {sample}')
             kinetics = None
         
         try:
             affinity =  [file for file in files if sample in file and 'affinity'.casefold() in file.casefold()][0]
         except IndexError:
-            print(f'did not find a SEC chromatogram file for {sample}')
+            print(f'did not find affinity file for {sample}')
             affinity = None
 
         # importing data and plotting
@@ -547,7 +583,7 @@ def spr_summary(data_dir: str, save_fig: bool=False, sensorgram_legend: bool=Fal
             # adding sample description
             ax_kinetics.text(0.02, 0.9, sample, 
                         transform=ax_kinetics.transAxes, 
-                        fontsize=16, 
+                        fontsize=12, 
                         fontname='Helvetica')
         
         if affinity == None:
@@ -562,18 +598,25 @@ def spr_summary(data_dir: str, save_fig: bool=False, sensorgram_legend: bool=Fal
             
         else:
             affinity_data = load_affinity_data(file=affinity)
-            fitted, kd = fit_sigmoid_function(affinity_data, mock_scale=aff_scale)
-            
+
+            try:
+                fitted, kd = fit_sigmoid_function(affinity_data, mock_scale=aff_scale)
+                kd = f'{round(kd, 3)} µM'
+            except RuntimeError:
+                # handling in case fitting fails (e.g. for negative controls)
+                fitted = pd.DataFrame
+                kd = 'NA'
+
             draw_steady_state(exp_data=affinity_data, fitted=fitted, ax=ax_affinity)
 
             # adding sample description
-            ax_affinity.text(0.02, 0.9, sample+f'\nKd = {round(kd, 3)} µM', 
+            ax_affinity.text(0.02, 0.9, sample+f'\nKd = {kd}', 
                              transform=ax_affinity.transAxes, 
-                             fontsize=16, 
+                             fontsize=12, 
                              fontname='Helvetica')
             
     if save_fig:
-        pass
+        plt.savefig(os.path.join(data_dir, 'spr_summary.png'), dpi=300, bbox_inches='tight')
     
     plt.show()
     plt.close('all')
