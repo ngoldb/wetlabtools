@@ -15,7 +15,8 @@ from wetlabtools import utils
 
 
 
-def secmals(path:str, flow_rate:float, min_x:float=0, max_x:float=999, MW_lim: set=(1e4, 1e6), display_MW_mean: bool=True, save_pdf:bool=False, save_png:bool=False):
+def secmals(path:str, flow_rate:float, min_x:float=0, max_x:float=999, MW_lim: set=(1e4, 1e6), 
+            display_MW_mean: bool=True, save_svg:bool=False, save_png:bool=False):
     '''
     path: str, path to the directory with csv files
     flow_rate: float, flow rate in ml/min to convert min to ml (x-axis)
@@ -24,7 +25,7 @@ def secmals(path:str, flow_rate:float, min_x:float=0, max_x:float=999, MW_lim: s
     MW_lim: set, limits of the y axis for MW axis: [lower, upper]
     display_MW_mean: bool, calculate mean of MW and display on the plot
     save_png: bool, whether to save plots as pdf
-    save_pdf: bool, whether to save plots as png
+    save_svg: bool, whether to save plots as svg
     
     Function to plot data from SEC-MALS. It will parse the directory for all csv files and plot them as SEC-MALS data.
     '''
@@ -99,9 +100,9 @@ def secmals(path:str, flow_rate:float, min_x:float=0, max_x:float=999, MW_lim: s
         
         plt.title(sample_name)
 
-        if save_pdf:
-            plt.savefig(csv_path[:-4]+'.pdf')
-            print(f'saving plot to {csv_path[:-4]}.pdf')
+        if save_svg:
+            plt.savefig(csv_path[:-4]+'.svg', format='svg')
+            print(f'saving plot to {csv_path[:-4]}.svg')
         
         if save_png: 
             plt.savefig(csv_path[:-4]+'.png', dpi=300)

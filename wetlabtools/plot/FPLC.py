@@ -338,8 +338,10 @@ def fplc(data: pd.DataFrame,
          elution: bool=False,
          height: int=8,
          width: int=18,
-         save_png: str='', 
-         sample: str=''
+         save_fig: bool=False, 
+         out_file: str = 'plot.png',
+         sample: str='',
+         **save_kwargs
         ):
     """
     data: pd.DataFrame, data frame containing the data exported from Unicorn
@@ -351,8 +353,10 @@ def fplc(data: pd.DataFrame,
     elution: bool, whether to show only elution phase (will overwrite min_x and max_x) 
     height: int, height of the plot
     width: int, width of the plot
-    save_png: str, path where to save the plot. Plot not saved if empty
+    save_fig: bool, whether to save figure
+    out_file: str, path to output file
     sample: str, sample name, will be set as figure title if provided
+    save_kwargs: kwargs passed to plt.savefig()
     
     Function to plot chromatograms from FPLC data. Need to import data first using 
     wetlabtools.plot.import_fplc().
@@ -375,8 +379,8 @@ def fplc(data: pd.DataFrame,
                   )
 
     # saving figure if path is provided
-    if save_png != '':
-        plt.savefig(save_png, dpi=300, bbox_inches='tight')
+    if save_fig:
+        plt.savefig(out_file, **save_kwargs)
     
     return fig
 
