@@ -211,7 +211,7 @@ def load_CD_data(data_csv: str, buffer_csv: str=''):
 
 
 
-def cd(data:dict, zooms:list, out_path:str='.', cutoff:float=2.0, mode:str='fade', min_x:float=195, max_x:float=260, save_pdf:bool=False, save_png:bool=False):
+def cd(data:dict, zooms:list, out_path:str='.', cutoff:float=2.0, mode:str='fade', min_x:float=195, max_x:float=260, save_fig:bool=False, plot_temp: list=[], **save_kwargs):
     '''
     data: dict, data dictonary containing CD, HV, and Absorbance data
     zooms: list, list of zoomed regions, False for no zoom, len of list must match number of samples
@@ -220,8 +220,9 @@ def cd(data:dict, zooms:list, out_path:str='.', cutoff:float=2.0, mode:str='fade
     mode: str, cutoff mode for CD plot ['None','fade','cut']
     min_x: float, min wavelength to plot
     max_x: float, max wavelength to plot
-    save_pdf: bool, whether to save plot as pdf
-    save_png: bool, whether to save plot as png
+    save_fig: bool, whether to save plot
+    plot_temp: list, list of temperatures to plot
+    save_kwargs: kwargs passed to plt.savefig()
     
     Function to plot data from CD melting ramps. Requires processing of the data in advance. 
     Will plot CD spectrum, HV, and Absorbance
@@ -247,7 +248,13 @@ def cd(data:dict, zooms:list, out_path:str='.', cutoff:float=2.0, mode:str='fade
         df = data['CircularDichroism'][sample_name]
         df = df.dropna(axis=1, how="all")
         df = df[::-1]
-        
+
+        if plot_temp:
+            temperatures = list(df.columns)
+            drop_temps = [t for t in temperatures 
+                        if t not in plot_temp]
+            df.drop(drop_temps, inplace=True, axis=1)
+
         df_a = data['Absorbance'][sample_name]
         df_a = df_a.dropna(axis=1, how="all")
         df_a = df_a[::-1]
@@ -321,12 +328,16 @@ def cd(data:dict, zooms:list, out_path:str='.', cutoff:float=2.0, mode:str='fade
         ax5.set_xlim( [min_x,max_x] )
         # ax5.axhline( y=800, color='red' )
         
-        if save_pdf: 
-            plt.savefig(out_file+'.pdf')
-            print(f'saving plot to {out_file}.pdf')
-        if save_png: 
-            plt.savefig(out_file+'.png', dpi=300)
-            print(f'saving plot to {out_file}.png')
+        if save_fig == True:
+            # there must be a nore elegant way
+            try:
+                fname = f'{out_file}.{save_kwargs["format"]}'
+            except KeyError:
+                # png is default if no format specified
+                fname = f'{out_file}.png'
+
+            plt.savefig(fname, **save_kwargs)
+            print(f'saved as {fname}')
         
         plt.show()
         plt.close()
