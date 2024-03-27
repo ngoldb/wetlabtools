@@ -432,13 +432,15 @@ def fplc_summary(directory: str, save_figure: bool=False):
             
         # find data files
         try:
-            imac = [file for file in files if sample in file and 'his'.casefold() in file.casefold()][0]
+            s = sample + '_his'
+            imac = [file for file in files if s.casefold() in file.casefold() and 'his'.casefold() in file.casefold()][0]
         except IndexError:
             print(f'did not find a IMAC chromatogram file for {sample}')
             imac = None
         
         try:
-            sec =  [file for file in files if sample in file and 'sec'.casefold() in file.casefold()][0]
+            s = sample + '_sec'
+            sec =  [file for file in files if s.casefold() in file.casefold() and 'sec'.casefold() in file.casefold()][0]
         except IndexError:
             print(f'did not find a SEC chromatogram file for {sample}')
             sec = None
