@@ -190,6 +190,7 @@ def fit_sigmoid_function(data, mock_scale='log', method: str='dogbox', **curve_f
 
 def multi_affinity(data_dir: str='', 
                    path_list: list=[],
+                   marker: str='o',
                    normalize: bool=False, 
                    rel_scale: bool=False,
                    fit_sigmoid: bool=True,
@@ -206,6 +207,7 @@ def multi_affinity(data_dir: str='',
     """
     data_dir: str, path to the directory containing txt files
     path_list: list, list of paths to txt files to plot (instead of data_dir)
+    marker: str, marker to use (seaborn, e.g. 'o' or '^')
     normalize: bool, whether to rescale all data from 0 to 100% of respective RU max
     rel_scale: bool, whether to scale all plots relative to the max RU (y axis will be 0 - 1)
     save_fig: bool, whether to save the figure
@@ -321,7 +323,8 @@ def multi_affinity(data_dir: str='',
                         x='x',
                         y='y',
                         ax=ax,
-                        label=label
+                        label=label,
+                        marker=marker
                         )
 
     # style plot
