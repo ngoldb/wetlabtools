@@ -200,7 +200,9 @@ def multi_affinity(data_dir: str='',
                    width: int=6,
                    omit_concentrations: list=[],
                    omit_samples: list=[],
-                   **curve_fit_kwargs):
+                   svg: bool=False,
+                   **curve_fit_kwargs
+                   ):
     """
     data_dir: str, path to the directory containing txt files
     path_list: list, list of paths to txt files to plot (instead of data_dir)
@@ -214,6 +216,7 @@ def multi_affinity(data_dir: str='',
     wdith: int, width of the plot
     omit_concentrations: list, list of concentrations to omit from data
     omit_samples: list, list of samples to omit
+    svg: bool, whether to save svg file or png (default)
     curve_fit_kwargs: kwargs passed to scipy.optimize.curve_fit() e.g. maxfev=5000 to increase iterations
 
     Function to plot affinity data from multiple experiments and overlay the curves in a single plot.
@@ -234,6 +237,9 @@ def multi_affinity(data_dir: str='',
 
         if data_dir != '' and path_list != []:
             raise IOError('You provided two input formats - use either data_dir or path_list')
+        
+        if report_kd and not fit_sigmoid:
+            raise IOError('You can not report a Kd if you did not fit a sigmoid curve to the data! The Kd is derived from the sigmoid curve fit.')
     
     except IOError as e:
         print(e)
@@ -306,7 +312,7 @@ def multi_affinity(data_dir: str='',
             ylabel = 'response units (RU)'
 
         # plotting experimental data points
-        if report_kd:
+        if report_kd and fit_sigmoid:
             label = f'{sample} (Kd = {round(kd*1_000, 2)} nM)'
         else:
             label = sample
@@ -327,7 +333,19 @@ def multi_affinity(data_dir: str='',
     plt.ylabel(ylabel)
 
     if save_fig == True:
-        plt.savefig("multi_affinity.png", dpi=300)
+        out_file = os.path.join(data_dir, 'multi-affinity')
+
+        # there must be a nore elegant way
+        if svg:
+            fname = f'{out_file}.svg'
+            plt.savefig(fname, format='svg')
+
+        else:
+            # png is default if no format specified
+            fname = f'{out_file}.png'
+            plt.savefig(fname, dpi=300)
+
+        print(f'saved as {fname}')
 
     plt.show()
 
