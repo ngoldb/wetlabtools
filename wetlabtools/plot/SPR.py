@@ -197,7 +197,7 @@ def multi_affinity(data_dir: str='',
                    report_kd: bool=True,
                    save_fig: bool=False, 
                    log: bool=True, 
-                   height:int=4, 
+                   height: int=4, 
                    width: int=6,
                    omit_concentrations: list=[],
                    omit_samples: list=[],
@@ -358,42 +358,29 @@ def multi_affinity(data_dir: str='',
 # =============
 # Kinetics
 # =============
-def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7, 
-                 show_figure: bool=True, ylim: list=[], **save_kwargs):
+def load_sensorgram(file: str) -> pd.DataFrame:
     '''
     file: str, path to the .txt file containing the recorded sensorgram
-    save_fig: bool, whether to save the plot to a file
-    height: int, height of the plot
-    width: int, width of the plot
-    show_figure: bool, whether to show the figure
-    ylim: list, y-axis limits (automatic if empty)
-    save_kwargs: kwargs passed to plt.savefig
-    
-    This function will read the data from the provided data file and will plot
-    the sensorgram of the respective sample.
+
+    This function will read the data from the provided data file and
+    return a data frame in long format.
     '''
-    
-    # initialize plot
-    fig, ax = plt.subplots(figsize=(width, height))
-    sns.set(palette='colorblind', style='ticks')
     
     # read data from file
     df = pd.read_csv(file, sep='\t', skipinitialspace=True)
-    to_drop = [col for col in df.columns if 'Fitted' in col]
-    df.drop(columns=to_drop, inplace=True)
-    
-    # drop fitted data if available
 
     columns = df.columns
     done = []
 
     mapping = {'X':'Y', 'Y':'X'}
+    df_long = pd.DataFrame(columns=['concentration','x','y','type'])
 
     for column in columns:
         if column in done:
             pass
         else:
             try:
+                # find x and y value pairs from cryptic column names
                 cols = {'X':'','Y':''}
 
                 sample = column.split(';')[4].strip()
@@ -403,18 +390,116 @@ def spr_kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7,
                 cols[series] = column
                 cols[mapping[series]] = column.replace(series, mapping[series])
 
+                # convert into long format
+                df_temp = pd.DataFrame()
+                df_temp['x'] = df[cols['X']]
+                df_temp['y'] = df[cols['Y']]
+                df_temp['concentration'] = conc
+                
+                if 'Fitted' in column:
+                    df_temp['type'] = 'fit'
+                else:
+                    df_temp['type'] = 'data'
+                    
+                # add to df_long
+                df_long = pd.concat([df_long, df_temp.dropna()], ignore_index=True, sort=False)
+                    
+                # record that we are done with this pair
                 done.append(column)
                 done.append(column.replace(series, mapping[series]))
 
-                g = sns.lineplot(df, x=cols['X'], y=cols['Y'], label=conc, ax=ax)
             except: pass
+        
+    return df_long, sample
+
+
+def kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7, 
+             show_figure: bool=True, ylim: list=[], plot_fit: bool=False, 
+             single_cycle: bool=False, annotate_cycles: bool=False, 
+             **save_kwargs):
+    '''
+    file: str, path to the .txt file containing the recorded sensorgram
+    save_fig: bool, whether to save the plot to a file
+    height: int, height of the plot
+    width: int, width of the plot
+    show_figure: bool, whether to show the figure
+    ylim: list, y-axis limits (automatic if empty)
+    plot_fit: bool, whether to plot the fitted function
+    single_cycle: bool, whether data is single cycles kinetics measurement
+    annotate_cycles: bool, print concentration for single cycle kinetics
+    save_kwargs: kwargs passed to plt.savefig
+    
+    This function will read the data from the provided data file and will plot
+    the sensorgram of the respective sample.
+    '''
+    
+    # sanity check
+    if annotate_cycles and not single_cycle:
+        warnings.warn('annotate_cycles is an option specific to single cylce kinetics. You did not set single_cycle=True')
+
+    # initialize plot
+    fig, ax = plt.subplots(figsize=(width, height))
+    sns.set_theme(palette='colorblind', style='ticks')
+    
+    # read data from file
+    df, sample = load_sensorgram(file)
+
+    # plotting
+    if plot_fit:
+        g = sns.lineplot(data=df, x='x', y='y', hue='concentration', style='type')
+        handles, labels = ax.get_legend_handles_labels()
+    else:
+        g = sns.lineplot(data=df[df.type=='data'], x='x', y='y', hue='concentration')
+        handles, labels = ax.get_legend_handles_labels()
+        
+    # Specific adjustments 
+    if plot_fit:
+        # clean up legend entries
+        to_remove = [labels.index(x) for x in ['concentration', 'type', 'data']]
+
+        for x in reversed(to_remove):
+            handles.pop(x)
+            labels.pop(x)
+
+        if single_cycle:
+            handles.pop(0)
+            handles[0].set_c('b')
+            sc_conc = labels.pop(0)
+            
+        plt.legend(handles, labels, frameon=False)
+
+    else:
+        if single_cycle:
+            sc_conc = labels.pop(0)
+            plt.legend('', frameon=False)
+        else:
+            plt.legend(frameon=False)
+
+    # adding description of cycles in single cycle kinetics
+    if annotate_cycles and single_cycle:
+        # create a list of concentrations
+        sc_conc = sc_conc.split()
+        sc_conc = [' '.join([x, sc_conc[-1]]) for x in sc_conc[0:-1]]
+        
+        # estimate time of one cycle
+        cycle_time = df[df.y == df.y.max()].x.values[0] / len(sc_conc)
+        
+        # add text to plot
+        for i, conc in enumerate(sc_conc):
+            x_pos = cycle_time*(i+1)-cycle_time/2
+            y_max = g.get_ylim()[1]
+            plt.text(x=x_pos,
+                        y=0.98*y_max,
+                        s=conc,
+                        horizontalalignment='center',
+                        verticalalignment='top',
+                        fontsize=6)
 
     # adjusting plot
     plt.xlabel('time (s)')
     plt.ylabel('Response units')
     plt.title(sample)
     sns.despine()
-    plt.legend(frameon=False)
     
     if ylim:
         plt.ylim(ylim)
