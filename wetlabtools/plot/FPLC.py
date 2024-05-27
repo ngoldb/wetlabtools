@@ -339,7 +339,7 @@ def fplc(data: pd.DataFrame,
          height: int=8,
          width: int=18,
          save_fig: bool=False, 
-         out_file: str = 'plot.png',
+         out_file: str='plot.png',
          sample: str='',
          **save_kwargs
         ):
@@ -381,6 +381,7 @@ def fplc(data: pd.DataFrame,
     # saving figure if path is provided
     if save_fig:
         plt.savefig(out_file, **save_kwargs)
+        print(f'saved plot: {out_file}')
     
     return fig
 
