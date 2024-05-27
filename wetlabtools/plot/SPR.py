@@ -415,7 +415,7 @@ def load_sensorgram(file: str) -> pd.DataFrame:
 
 def kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7, 
              show_figure: bool=True, ylim: list=[], plot_fit: bool=False, 
-             single_cycle: bool=False, annotate_cycles: bool=False, 
+             single_cycle: bool=False, annotate_cycles: bool=False, out_file: str='',
              **save_kwargs):
     '''
     file: str, path to the .txt file containing the recorded sensorgram
@@ -427,6 +427,7 @@ def kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7,
     plot_fit: bool, whether to plot the fitted function
     single_cycle: bool, whether data is single cycles kinetics measurement
     annotate_cycles: bool, print concentration for single cycle kinetics
+    out_file: str, output file name (do not need to add file extension)
     save_kwargs: kwargs passed to plt.savefig
     
     This function will read the data from the provided data file and will plot
@@ -507,9 +508,17 @@ def kinetics(file: str, save_fig: bool=False, height: int=4, width: int=7,
     if save_fig == True:
         # there must be a nore elegant way
         try:
-            fname = f'kinetics.{save_kwargs["format"]}'
+            ext = f'{save_kwargs["format"]}'
         except KeyError:
-            fname = 'kinetics.png'
+            ext = 'png'
+
+        if out_file != '':
+            pass
+        else:
+            out_file, _ = os.path.splitext(os.path.basename(file))
+
+        path = os.path.dirname(file)
+        fname = os.path.join(path, '.'.join([out_file, ext]))
 
         plt.savefig(fname, **save_kwargs)
         print(f'saved as {fname}')
