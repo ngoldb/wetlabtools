@@ -3,6 +3,7 @@ This module contains code to parse data from the Tecan Excel sheets
 """
 
 import openpyxl
+import pandas as pd
 
 def parse_header(excel_sheet):
         
@@ -78,7 +79,50 @@ def parse_header(excel_sheet):
         return meta_data, protocol
 
 
-def parse_data(excel_sheet, mode, kinetics, reference):
-    """Parse data from Tecan excel file"""
-    # TODO
-    return None
+def parse_data(file: str, identifier: str, subset: str='A1-H12'):
+    """
+    file: str, path to the tecan excel file
+    identifier: str, identifier to find data
+    subset: str, region of the excel sheet to use to retrieve data
+
+    Function to parse data from Tecan excel sheet
+    """
+    wb_obj = openpyxl.load_workbook(file)
+    sheet_obj = wb_obj.active
+
+    for row in sheet_obj.iter_rows():
+        cell = row[0]
+        if cell.value == identifier:
+            if identifier != '<>':
+                start_row = cell.row + 1
+            else:
+                start_row = cell.row
+            
+            end_row = start_row + 8
+
+    # read data from excel region
+    skip = lambda x: x not in range(start_row - 1, end_row)
+    df = pd.read_excel(file, usecols='B:M', skiprows=skip)
+    df.index = list('ABCDEFGH')
+
+    # select subsets
+    subsets = subset.split(';')
+    data = pd.DataFrame()
+
+    for subset in subsets:
+        start, end = subset.split('-')
+        start_row = start[0]
+        end_row = end[0]
+        start_col = start[1:]
+        end_col = end[1:]
+
+        df_sub = df.loc[start_row : end_row, start_col : end_col]
+        df_sub = df_sub.reset_index()
+        df_melted = pd.melt(df_sub, id_vars='index', var_name='column', value_name='value')
+        df_melted['well'] = df_melted['index'] + df_melted['column'].astype(str)
+        df_melted.drop(['index', 'column'], axis=1, inplace=True)
+        
+        data = pd.concat([data, df_melted], ignore_index=True)
+    
+    data.drop_duplicates(subset='well', inplace=True)
+    return data
