@@ -34,6 +34,20 @@ def parse_header(excel_sheet):
                     row = next(iterator)
                     row_list = row2list(row)
 
+                    # check if a plate layout was added to the plate
+                    if action == 'Plate' and row_list == []:
+                        row = next(row_iterator)
+                        row_list = row2list(row)
+                        if row_list != []:
+                            if row_list[0] == '<>':
+                                subset = actions['Plate']['Plate area']
+                                actions[action]['plate_layout'] = parse_data(excel_sheet, identifier='<>', subset=subset).rename({'value':'sample_type'}, axis=1)
+                                # skip to end of plate layout
+                                while row_list != []:
+                                    row = next(iterator)
+                                    row_list = row2list(row)
+                        break
+
             return actions
 
         def format_config(row_list):
@@ -98,7 +112,9 @@ def parse_data(file: str, identifier: str, subset: str='A1-H12'):
             else:
                 start_row = cell.row
             
+            # we now that a 96 well plate has 8 rows
             end_row = start_row + 8
+            break
 
     # read data from excel region
     skip = lambda x: x not in range(start_row - 1, end_row)
