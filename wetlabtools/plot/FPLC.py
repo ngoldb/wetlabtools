@@ -188,6 +188,7 @@ def plot_subplots(data: pd.DataFrame,
                   min_x: float=None,
                   max_x: float=None,
                   elution: bool=False,
+                  ylim: list=[],
                   sample: str=''
                   ):
     """
@@ -199,6 +200,7 @@ def plot_subplots(data: pd.DataFrame,
     min_x: float, start of x axis
     max_x: float, end of x axis
     elution: bool, whether to show only elution phase (will overwrite min_x and max_x) 
+    ylim: list, manual limits for UV signal on y axis
     sample: str, sample name, will be set as figure title if provided
     
     Function to plot a chromatogram on a given figure
@@ -222,16 +224,22 @@ def plot_subplots(data: pd.DataFrame,
         except:
             pass
     
+    # get name of uv data
+    uv_names = ['UV', 'UV 1_280']
+    uv_avail = [x for x in uv_names if x in data.columns]
+    uv_name = uv_avail[0]
+    print(f'using UV channel {uv_name} of available channels {uv_avail}')
+
     # assigning min and max x if not set
     if min_x == None and max_x == None:
-        min_x = data['UV']['ml'].min()
-        max_x = data['UV']['ml'].max()
+        min_x = data[uv_name]['ml'].min()
+        max_x = data[uv_name]['ml'].max()
         
     elif min_x == None and max_x != None:
-        min_x = data['UV']['ml'].min()
+        min_x = data[uv_name]['ml'].min()
         
     elif max_x == None and min_x != None:
-        max_x = data['UV']['ml'].max()
+        max_x = data[uv_name]['ml'].max()
     
     # using min_x * 0.05 for both paddings to 
     # add identical space left and right
@@ -239,20 +247,24 @@ def plot_subplots(data: pd.DataFrame,
     max_x += min_x * 0.05
     
     # setting up y axis limits
-    uv_max = data[data['UV']['ml'].between(min_x,max_x)]['UV']['mAU'].max()
+    uv_max = data[data[uv_name]['ml'].between(min_x,max_x)][uv_name]['mAU'].max()
     cond_max = data[data['Cond']['ml'].between(min_x,max_x)]['Cond']['mS/cm'].max()
 
     ax1.set_xlabel('Volume (ml)', fontsize=18, fontname='Helvetica')
     ax1.tick_params(axis='x', labelsize=15)
 
     # plotting UV280
-    uv = sns.lineplot(data=data[data['UV']['ml'].between(min_x,max_x)]['UV'], 
+    uv = sns.lineplot(data=data[data[uv_name]['ml'].between(min_x,max_x)][uv_name], 
                       x='ml', 
                       y='mAU', 
                       color='tab:blue', 
                       ax=ax1
                      )
-    uv.set_ylim(0-uv_max*0.05, uv_max+uv_max*0.05)
+    if ylim == []:
+        uv.set_ylim(0-uv_max*0.05, uv_max+uv_max*0.05)
+    else:
+        uv.set_ylim(*ylim)
+
     ax1.set_ylabel('Absorbance 280nm (mAU)', fontsize=18, fontname='Helvetica', color='tab:blue')
     ax1.yaxis.set_tick_params(labelsize=15)
 
@@ -335,6 +347,7 @@ def fplc(data: pd.DataFrame,
          fractions: bool=False,
          min_x: float=None,
          max_x: float=None,
+         ylim: list=[],
          elution: bool=False,
          height: int=8,
          width: int=18,
@@ -350,6 +363,7 @@ def fplc(data: pd.DataFrame,
     fractions: bool, whether to show the fractions
     min_x: float, start of x axis
     max_x: float, end of x axis
+    ylim: list, manual limits for UV signal on y axis
     elution: bool, whether to show only elution phase (will overwrite min_x and max_x) 
     height: int, height of the plot
     width: int, width of the plot
@@ -375,7 +389,8 @@ def fplc(data: pd.DataFrame,
                   min_x=min_x,
                   max_x=max_x,
                   elution=elution,
-                  sample=sample
+                  sample=sample,
+                  ylim=ylim
                   )
 
     # saving figure if path is provided
