@@ -50,15 +50,20 @@ class cd_experiment(object):
         self.cd_unit = 'mdeg'
 
     def convert(self, unit: str='mre'):
-        IMPLEMENTED = ['mre']
+        IMPLEMENTED = ['mre', 'mrex103']
 
         if unit.casefold() not in IMPLEMENTED:
             raise NotImplementedError(IMPLEMENTED)
         
-        if unit.casefold() == 'mre':
+        if unit.casefold() in ['MRE', 'MREx103']:
             self.data['CircularDichroism']
             self.data['CircularDichroism']['value'] = self.data['CircularDichroism'].value / (self.data['CircularDichroism'].pathlength * self.data['CircularDichroism'].conc * self.data['CircularDichroism'].n_pep * 10 ** -6)
-            self.cd_unit = 'mre'
+            
+            if unit.casefold() == 'MREx103':
+                self.data['CircularDichroism']['value'] = self.data['CircularDichroism']['value'] * 1e-3
+                self.cd_unit = 'MREx103' 
+            else:   
+                self.cd_unit = 'MRE'
 
         print(f'converted to {unit}')
 
@@ -94,8 +99,16 @@ class cd_experiment(object):
     def get_properties(self):
         return self.properties
     
-    def get_data(self):
-        return self.data
+    def get_data(self, cell: str=None):
+        if cell:
+            data = dict()
+            for prop in self.data:
+                df = self.data[prop]
+                data[prop] = df[df['Cell'] == str(cell)]
+        else:
+            data = self.data
+
+        return data
     
     def get_samples(self):
         return self.sample_data
