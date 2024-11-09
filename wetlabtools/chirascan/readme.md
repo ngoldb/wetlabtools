@@ -10,7 +10,7 @@ data = cd.get_data()
 ```
 
 When you provide the sample information, the script can convert the units from mdeg (measured by the instrument) into MRE. The protein concentration must be provided in µM and the pathlenght must be provided in mm:
-```
+```python
 sample_dict = {
     'Cell1': {
         'sample_id': 'sample_1',
@@ -61,7 +61,7 @@ Note that user provided sample data will overwrite the data read from the data f
 Layouts take specific data inputs and generate figures from these. 
 ### Single wavelength melt with pre- and post-melt full spectra
 This layout plots the full spectra before and after a melt on the left and plots the melting curve on the right. It will generate one figure for each cell and convert the cd signal to MRE.
-```
+```python
 premelt_file = '/path/to/pre_melt_spectra.csv'
 postmelt_file = '/path/to/post_melt_spectra.csv'
 melt_file = '/path/to/single_wavelength_melt.csv'
