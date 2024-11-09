@@ -43,6 +43,11 @@ class cd_experiment(object):
         for data in self.data:
             self.data[data] = pd.merge(self.data[data], self.sample_data, on='Cell')
 
+        # make sure wavelength is of type int
+        self.data["CircularDichroism"]['Wavelength'] = self.data["CircularDichroism"]['Wavelength'].astype(int)
+
+        # record data format of cd signal
+        self.cd_unit = 'mdeg'
 
     def convert(self, unit: str='mre'):
         IMPLEMENTED = ['mre']
@@ -53,6 +58,7 @@ class cd_experiment(object):
         if unit.casefold() == 'mre':
             self.data['CircularDichroism']
             self.data['CircularDichroism']['value'] = self.data['CircularDichroism'].value / (self.data['CircularDichroism'].pathlength * self.data['CircularDichroism'].conc * self.data['CircularDichroism'].n_pep * 10 ** -6)
+            self.cd_unit = 'mre'
 
         print(f'converted to {unit}')
 
@@ -99,4 +105,6 @@ class cd_experiment(object):
             return self.blank_data
         except AttributeError as err:
             raise Exception('blank data not available - use subtract_blank() to add blank data') from err
-    
+        
+    def get_cd_unit(self):
+        return self.cd_unit
