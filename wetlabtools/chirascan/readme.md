@@ -11,6 +11,8 @@ data = cd.get_data()
 
 When you provide the sample information, the script can convert the units from mdeg (measured by the instrument) into MRE. The protein concentration must be provided in µM and the pathlenght must be provided in mm:
 ```python
+import wetlabtools
+
 sample_dict = {
     'Cell1': {
         'sample_id': 'sample_1',
@@ -67,13 +69,13 @@ postmelt_file = '/path/to/post_melt_spectra.csv'
 melt_file = '/path/to/single_wavelength_melt.csv'
 blank_file = '/path/to/buffer.csv'
 
-single_wvl_melt(premelt_file=premelt_file, 
-                postmelt_file=postmelt_file, 
-                melt_file=melt_file, 
-                blank_file=blank_file, 
-                sample_data=sample_dict, 
-                wvl_lim=(200,260), 
-                tmp_lim=(20,90), 
-                save_png=True, 
-                save_svg=True)
+wetlabtools.chirascan.layouts.single_wvl_melt(premelt_file=premelt_file, 
+                                              postmelt_file=postmelt_file, 
+                                              melt_file=melt_file, 
+                                              blank_file=blank_file, 
+                                              sample_data=sample_dict, 
+                                              wvl_lim=(200,260), 
+                                              tmp_lim=(20,90), 
+                                              save_png=True, 
+                                              save_svg=True)
 ```
