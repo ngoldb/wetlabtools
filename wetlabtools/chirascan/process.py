@@ -62,7 +62,7 @@ def data2df(data, dimensions, cells):
                             id_vars=(curr_data_dim['ax'][0]),
                             var_name=curr_data_dim['ax'][1]
                         )
-                        tmp_heat_df['phase'] = 'heating'
+                        tmp_heat_df['phase'] = 'heat'
                         
                         tmp_cool_df = df.iloc[split_index[0]:, :].copy()
                         tmp_cool_df = tmp_cool_df.melt(
@@ -70,7 +70,7 @@ def data2df(data, dimensions, cells):
                             id_vars=(curr_data_dim['ax'][0]),
                             var_name=curr_data_dim['ax'][1]
                         )
-                        tmp_cool_df['phase'] = 'cooling'
+                        tmp_cool_df['phase'] = 'cool'
                         df = pd.concat([tmp_heat_df, tmp_cool_df], axis='index', ignore_index=True)
                     
                     else:
@@ -104,25 +104,3 @@ def data2df(data, dimensions, cells):
             data[prop] = df_tmp
 
     return data
-
-
-###################################
-# Converting data
-def convert(unit: str):
-    """
-    Functions to convert CD data to different units. Implemented units:
-    MRE
-    """
-
-    IMPLEMENTED = ['MRE']
-    if unit not in IMPLEMENTED:
-        raise ValueError(f'{unit} not implemented. Implemented units: {IMPLEMENTED}')
-    
-    def __mre():
-        return 1
-    
-    if unit.upper() == 'MRE':
-        return __mre
-
-###################################
-# Normalize data

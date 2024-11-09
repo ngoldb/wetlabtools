@@ -56,3 +56,24 @@ cd.convert(unit='mre')
 data = cd.get_data()
 ```
 Note that user provided sample data will overwrite the data read from the data file!
+
+## Layouts
+Layouts take specific data inputs and generate figures from these. 
+### Single wavelength melt with pre- and post-melt full spectra
+This layout plots the full spectra before and after a melt on the left and plots the melting curve on the right. It will generate one figure for each cell and convert the cd signal to MRE.
+```
+premelt_file = '/path/to/pre_melt_spectra.csv'
+postmelt_file = '/path/to/post_melt_spectra.csv'
+melt_file = '/path/to/single_wavelength_melt.csv'
+blank_file = '/path/to/buffer.csv'
+
+single_wvl_melt(premelt_file=premelt_file, 
+                postmelt_file=postmelt_file, 
+                melt_file=melt_file, 
+                blank_file=blank_file, 
+                sample_data=sample_dict, 
+                wvl_lim=(200,260), 
+                tmp_lim=(20,90), 
+                save_png=True, 
+                save_svg=True)
+```
