@@ -13,8 +13,8 @@ plt.rcParams['svg.fonttype'] = 'none'
 
 
 def single_wvl_melt(premelt_file: str, postmelt_file: str, melt_file: str, blank_file: str, sample_data: dict,
-                    qc_metric: str='hv', wvl_lim: tuple=None, tmp_lim: tuple=None, show_ci: bool=False, save_png: bool=False,
-                    save_svg: bool=False):
+                    qc_metric: str='hv', wvl_lim: tuple=None, tmp_lim: tuple=None, ylim: tuple=None, show_ci: bool=False, 
+                    title: bool=True, save_png: bool=False, save_svg: bool=False):
     """
     premelt_file: str, path to the csv file of pre melt spectra
     postmelt_file: str, path to the csv file of post melt spectra
@@ -24,7 +24,9 @@ def single_wvl_melt(premelt_file: str, postmelt_file: str, melt_file: str, blank
     qc_metric: str, which metric to use for qc plots [ht, absorbance]
     wvl_lim: tuple, limits of the wavelength range to show for pre- and post melt spectra
     tmp_lim: tuple, limits of the temperature range to show for melting curve
+    ylim: tuple, limits of cd signal (y axis).
     show_ci: bool, whether to show confidence interval based on repeated measurements
+    title: bool, whether to display title on plot (sample id)
     save_png: bool, whether to save the figure as png
     save_svg: bool, whether to save the figure as svg
 
@@ -67,6 +69,8 @@ def single_wvl_melt(premelt_file: str, postmelt_file: str, melt_file: str, blank
 
         # create figure
         fig = plt.figure(layout='constrained', figsize=(5.5, 3), dpi=300)
+        if title:
+            fig.suptitle(sample, fontsize=9)
         subfigs = fig.subfigures(1, 2, wspace=0.07)
 
         # full spectra: pre and post melt
@@ -95,6 +99,7 @@ def single_wvl_melt(premelt_file: str, postmelt_file: str, melt_file: str, blank
         
         cd_df = melt_df['CircularDichroism']
         qc_df = melt_df[qc_metric]
+        wavelength = cd_df.Wavelength.unique()[0]
 
         if not show_ci:
             cd_df = cd_df.groupby(['Temperature', 'phase'], as_index=False)['value'].mean()
@@ -122,12 +127,15 @@ def single_wvl_melt(premelt_file: str, postmelt_file: str, melt_file: str, blank
             qc_label = 'Absorbance\n (a.u.)'
 
         ## labels
-        axsnest1[1].set_xlabel('Temperature ($^\circ$C)\n\n', fontsize=8)
-        axsnest0[1].set_xlabel('Wavelength ($\mathrm{nm}$)\n\n', fontsize=8)
-        axsnest1[0].set_ylabel('$\mathrm{MRE}$\n  $\mathrm{(deg\ cm^{2}\ dmol^{-1}\ res^{-1}\ x10^{3}}$)', fontsize=8)
-        axsnest0[0].set_ylabel('$\mathrm{MRE}$\n  $\mathrm{(deg\ cm^{2}\ dmol^{-1}\ res^{-1}\ x10^{3}}$)', fontsize=8)
-        axsnest1[1].set_ylabel(qc_label, fontsize=8)
-        axsnest0[1].set_ylabel(qc_label, fontsize=8)
+        axsnest1[1].set_xlabel('Temperature ($^\circ$C)\n\n', fontsize=7)
+        axsnest0[1].set_xlabel('Wavelength ($\mathrm{nm}$)\n\n', fontsize=7)
+        axsnest0[0].set_ylabel('$\mathrm{MRE}$\n  $\mathrm{(deg\ cm^{2}\ dmol^{-1}\ res^{-1}\ x10^{3}}$)', fontsize=7)
+        axsnest1[0].set_ylabel(
+            f'$\\mathrm{{MRE_{{{wavelength}}}}}$\n  $\\mathrm{{(deg\\ cm^{{2}}\\ dmol^{{-1}}\\ res^{{-1}}\\ x10^{{3}})}}$',
+            fontsize=7
+        )
+        axsnest1[1].set_ylabel(qc_label, fontsize=7)
+        axsnest0[1].set_ylabel(qc_label, fontsize=7)
 
         ## legend
         axsnest1[0].legend(fontsize=6, frameon=False)
@@ -139,14 +147,18 @@ def single_wvl_melt(premelt_file: str, postmelt_file: str, melt_file: str, blank
             axsnest1[1].set_ylim(0, 1000)
             axsnest1[1].set_yticks([0, 500, 1000])
             axsnest0[1].set_yticks([0, 500, 1000])
+
+        if ylim:
+            axsnest0[0].set_ylim(*ylim)
+            axsnest1[0].set_ylim(*ylim)
         
         ## xtick label fontsize  
-        axsnest0[0].tick_params(axis='y', labelsize=8)
-        axsnest1[0].tick_params(axis='y', labelsize=8)
-        axsnest0[1].tick_params(axis='y', labelsize=8)
-        axsnest1[1].tick_params(axis='y', labelsize=8)
-        axsnest0[1].tick_params(axis='x', labelsize=8)
-        axsnest1[1].tick_params(axis='x', labelsize=8)
+        axsnest0[0].tick_params(axis='y', labelsize=7)
+        axsnest1[0].tick_params(axis='y', labelsize=7)
+        axsnest0[1].tick_params(axis='y', labelsize=7)
+        axsnest1[1].tick_params(axis='y', labelsize=7)
+        axsnest0[1].tick_params(axis='x', labelsize=7)
+        axsnest1[1].tick_params(axis='x', labelsize=7)
         
         sns.despine()
 
