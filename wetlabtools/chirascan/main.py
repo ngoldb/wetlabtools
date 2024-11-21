@@ -50,18 +50,21 @@ class cd_experiment(object):
         self.cd_unit = 'mdeg'
 
     def convert(self, unit: str='mre'):
-        IMPLEMENTED = ['mre', 'mrex103']
+        IMPLEMENTED = ['mre', 'mrex103', 'de']
 
         if unit.casefold() not in IMPLEMENTED:
             raise NotImplementedError(IMPLEMENTED)
         
-        if unit.casefold() in ['MRE', 'MREx103']:
+        if unit.casefold() in ['MRE', 'MREx103', 'de']:
             self.data['CircularDichroism']
             self.data['CircularDichroism']['value'] = self.data['CircularDichroism'].value / (self.data['CircularDichroism'].pathlength * self.data['CircularDichroism'].conc * self.data['CircularDichroism'].n_pep * 10 ** -6)
             
             if unit.casefold() == 'MREx103':
                 self.data['CircularDichroism']['value'] = self.data['CircularDichroism']['value'] * 1e-3
                 self.cd_unit = 'MREx103' 
+            elif unit.casefold() == 'de':
+                self.data['CircularDichroism']['value'] = self.data['CircularDichroism']['value'] / 3298
+                self.cd_unit = 'de'
             else:   
                 self.cd_unit = 'MRE'
 
@@ -99,12 +102,13 @@ class cd_experiment(object):
     def get_properties(self):
         return self.properties
     
-    def get_data(self, cell: str=None):
-        if cell:
+    def get_data(self, cells: list=None):
+        if cells:
+            cells = [str(x) for x in cells]
             data = dict()
             for prop in self.data:
                 df = self.data[prop]
-                data[prop] = df[df['Cell'] == str(cell)]
+                data[prop] = df[df['Cell'].isin(cells)]
         else:
             data = self.data
 

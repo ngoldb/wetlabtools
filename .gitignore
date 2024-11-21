@@ -164,3 +164,7 @@ cython_debug/
 
 # vscode configurations
 .vscode
+examples/example_data/cd/plots/sample_1.png
+examples/example_data/cd/plots/sample_1.svg
+examples/example_data/cd/plots/sample_2.png
+examples/example_data/cd/plots/sample_2.svg
