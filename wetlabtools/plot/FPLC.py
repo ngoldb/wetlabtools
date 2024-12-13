@@ -351,8 +351,9 @@ def fplc(data: pd.DataFrame,
          elution: bool=False,
          height: int=8,
          width: int=18,
-         save_fig: bool=False, 
-         out_file: str='plot.png',
+         save_svg: bool=False, 
+         save_png: bool=False,
+         out_file: str='plot',
          sample: str='',
          **save_kwargs
         ):
@@ -367,10 +368,10 @@ def fplc(data: pd.DataFrame,
     elution: bool, whether to show only elution phase (will overwrite min_x and max_x) 
     height: int, height of the plot
     width: int, width of the plot
-    save_fig: bool, whether to save figure
+    save_png: bool, whether to save figure as png
+    save_svg: bool, whether to save figure as svg
     out_file: str, path to output file
     sample: str, sample name, will be set as figure title if provided
-    save_kwargs: kwargs passed to plt.savefig()
     
     Function to plot chromatograms from FPLC data. Need to import data first using 
     wetlabtools.plot.import_fplc().
@@ -394,10 +395,14 @@ def fplc(data: pd.DataFrame,
                   )
 
     # saving figure if path is provided
-    if save_fig:
-        plt.savefig(out_file, **save_kwargs)
+    if save_svg:
+        plt.savefig(out_file + '.svg', format='svg')
         print(f'saved plot: {out_file}')
     
+    if save_png:
+        plt.savefig(out_file + '.png', format='png')
+        print(f'saved plot: {out_file}')
+
     return fig
 
 
