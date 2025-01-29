@@ -5,6 +5,7 @@ Module to plot any kind of chromatogram from FPLC (IMAC, SEC, ...)
 # general
 import os
 import math
+import fnmatch
 import warnings
 
 # Data handling and plotting
@@ -189,7 +190,8 @@ def plot_subplots(data: pd.DataFrame,
                   max_x: float=None,
                   elution: bool=False,
                   ylim: list=[],
-                  sample: str=''
+                  sample: str='',
+                  uv_channels: list=[280]
                   ):
     """
     data: pd.DataFrame, data frame containing the data exported from Unicorn
@@ -202,7 +204,8 @@ def plot_subplots(data: pd.DataFrame,
     elution: bool, whether to show only elution phase (will overwrite min_x and max_x) 
     ylim: list, manual limits for UV signal on y axis
     sample: str, sample name, will be set as figure title if provided
-    
+    uv_channels: list, list of uv wavelengths to plot
+
     Function to plot a chromatogram on a given figure
     """
     
@@ -224,48 +227,95 @@ def plot_subplots(data: pd.DataFrame,
         except:
             pass
     
-    # get name of uv data
-    uv_names = ['UV', 'UV 1_280']
-    uv_avail = [x for x in uv_names if x in data.columns]
-    uv_name = uv_avail[0]
-    print(f'using UV channel {uv_name} of available channels {uv_avail}')
+    # for multi wavelength data
+    multi_wvl_data_colors = ['tab:blue', 'tab:purple', 'tab:green']
+
+    # check detector type and assign uv channels
+    if 'UV' in data.columns:
+        if len(uv_channels) > 1:
+            raise ValueError('you try to extract more than one uv channel from single uv channel data')
+        uv_names = ['UV']
+    else:
+        uv_names = []
+        for channel in uv_channels:
+            uv_names.append([x[0] for x in data.columns if fnmatch.fnmatch(x[0], f"UV *_{channel}")][0])
+
+    # get available uv channels and check all channels were found
+    uv_avail = set([column[0] for column in data.columns if 'UV' in column[0]])
+    if len(uv_names) == 0 or len(uv_names) != len(uv_channels):
+        raise ValueError(f'failed to extract uv channels! You requested {uv_channels} from available {uv_avail}')
 
     # assigning min and max x if not set
     if min_x == None and max_x == None:
-        min_x = data[uv_name]['ml'].min()
-        max_x = data[uv_name]['ml'].max()
+        min_x = data[uv_names[0]]['ml'].min()
+        max_x = data[uv_names[0]]['ml'].max()
         
     elif min_x == None and max_x != None:
-        min_x = data[uv_name]['ml'].min()
+        min_x = data[uv_names[0]]['ml'].min()
         
     elif max_x == None and min_x != None:
-        max_x = data[uv_name]['ml'].max()
+        max_x = data[uv_names[0]]['ml'].max()
     
     # using min_x * 0.05 for both paddings to 
     # add identical space left and right
     min_x -= min_x * 0.05
     max_x += min_x * 0.05
     
-    # setting up y axis limits
-    uv_max = data[data[uv_name]['ml'].between(min_x,max_x)][uv_name]['mAU'].max()
+    # determine y axis limits
+    uv_max = 0
+    uv_min = 0
+    for uv_name in uv_names:
+        temp_max = data[data[uv_name]['ml'].between(min_x,max_x)][uv_name]['mAU'].max()
+        temp_min = data[data[uv_name]['ml'].between(min_x,max_x)][uv_name]['mAU'].min()
+        if temp_max > uv_max:
+            uv_max = temp_max
+        if temp_min < uv_min:
+            uv_min = temp_min
+
     cond_max = data[data['Cond']['ml'].between(min_x,max_x)]['Cond']['mS/cm'].max()
 
     ax1.set_xlabel('Volume (ml)', fontsize=18, fontname='Helvetica')
     ax1.tick_params(axis='x', labelsize=15)
 
-    # plotting UV280
-    uv = sns.lineplot(data=data[data[uv_name]['ml'].between(min_x,max_x)][uv_name], 
-                      x='ml', 
-                      y='mAU', 
-                      color='tab:blue', 
-                      ax=ax1
-                     )
-    if ylim == []:
-        uv.set_ylim(0-uv_max*0.05, uv_max+uv_max*0.05)
+    # plotting UV
+    if len(uv_names) == 1:
+        sns.lineplot(
+            data=data[data[uv_names[0]]['ml'].between(min_x,max_x)][uv_names[0]],
+            x='ml', 
+            y='mAU', 
+            color='tab:blue', 
+            ax=ax1
+        ) 
+                          
     else:
-        uv.set_ylim(*ylim)
+        for i, uv_name in enumerate(uv_names):
+            ax1.plot(
+                'ml',
+                'mAU',
+                data=data[data[uv_name]['ml'].between(min_x,max_x)][uv_name], 
+                color=multi_wvl_data_colors[i],
+                label=f"{uv_channels[i]} nm"
+            )
 
-    ax1.set_ylabel('Absorbance 280nm (mAU)', fontsize=18, fontname='Helvetica', color='tab:blue')
+    # actually setting y axis limits
+    if ylim == []:
+        ax1.set_ylim(uv_min-uv_max*0.05, uv_max+uv_max*0.05)
+    else:
+        ax1.set_ylim(*ylim)
+
+    if len(uv_channels) == 1:
+        ax1.set_ylabel(f'Absorbance {uv_channels[0]}nm (mAU)', fontsize=18, fontname='Helvetica', color='tab:blue')
+    else:
+        ax1.set_ylabel(f'Absorbance (mAU)', fontsize=18, fontname='Helvetica', color='black')
+        
+        # adding legend for uv data
+        ax1.legend(
+            title='Absorbance', 
+            frameon=False, 
+            fontsize=14, 
+            title_fontsize=14
+        )
+
     ax1.yaxis.set_tick_params(labelsize=15)
 
     if sum([cond, concB]) == 2:
@@ -355,6 +405,7 @@ def fplc(data: pd.DataFrame,
          save_png: bool=False,
          out_file: str='plot',
          sample: str='',
+         uv_channels: list=[280],
          **save_kwargs
         ):
     """
@@ -372,6 +423,7 @@ def fplc(data: pd.DataFrame,
     save_svg: bool, whether to save figure as svg
     out_file: str, path to output file
     sample: str, sample name, will be set as figure title if provided
+    uv_channels: list, list of uv wavelengths to plot
     
     Function to plot chromatograms from FPLC data. Need to import data first using 
     wetlabtools.plot.import_fplc().
@@ -391,7 +443,8 @@ def fplc(data: pd.DataFrame,
                   max_x=max_x,
                   elution=elution,
                   sample=sample,
-                  ylim=ylim
+                  ylim=ylim,
+                  uv_channels=uv_channels
                   )
 
     # saving figure if path is provided
