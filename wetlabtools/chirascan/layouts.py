@@ -3,14 +3,27 @@ This submodule contains layouts to present CD data
 """
 
 import os
-import seaborn as sns
+import logging
 import matplotlib
+import numpy as np
+import seaborn as sns
 import matplotlib.pyplot as plt
 
 from wetlabtools.chirascan import cd_experiment
 
+logging.getLogger().setLevel(logging.CRITICAL)
+
 # svg font names
 plt.rcParams['svg.fonttype'] = 'none'
+
+# small helper
+def extract_n_elements(lst, n):
+    '''returns n evenly spaced elements from list'''
+    if n > len(lst):
+        n = len(lst)
+    lst.sort()
+    indices = np.linspace(0, len(lst) - 1, n, dtype=int)
+    return [lst[i] for i in indices]
 
 
 def single_wvl_melt(premelt_file: str, postmelt_file: str, melt_file: str, blank_file: str, sample_data: dict,
@@ -182,10 +195,12 @@ def single_wvl_melt(premelt_file: str, postmelt_file: str, melt_file: str, blank
         plt.close('all')
 
 
+# TODO
+# - account for final measurement after melt
 def full_spectrum_melt(
         melt_file: str, 
         blank_file: str=None, 
-        sample_data: str=None, 
+        sample_data: dict=None, 
         qc_metric: str='HV',
         wvl_lim: tuple=None, 
         tmp_lim: tuple=None, 
@@ -194,7 +209,8 @@ def full_spectrum_melt(
         title: bool=True, 
         colormap: str='vlag',
         melt_wavelength: int=222,
-        legend: str='continuos',
+        n_spectra: int=999,
+        legend: str='continuous',
         save_png: bool=False, 
         save_svg: bool=False
     ):
@@ -210,7 +226,8 @@ def full_spectrum_melt(
     title: bool, whether to display title on plot (sample id)
     colormap: str, name of the seaborn colormap to use (default: vlag)
     melt_wavelength: int, wavelength to plot for the melting curve
-    legend: str, type of legend to generate ['discrete', 'continuos'] - False if no legend should be generated
+    n_spectra: int, number of spectra to plot (does not affect melting curve)
+    legend: str, type of legend to generate ['discrete', 'continuous'] - False if no legend should be generated
     save_png: bool, whether to save the figure as png
     save_svg: bool, whether to save the figure as svg
 
@@ -271,6 +288,12 @@ def full_spectrum_melt(
         melt_cd = cd_df[cd_df['Wavelength'] == melt_wavelength]
         melt_qc = qc_df[qc_df['Wavelength'] == melt_wavelength]
 
+        # extract spectra if needed
+        if n_spectra < len(cd_df.Temperature.unique()):
+            temp_to_plot = extract_n_elements(cd_df.Temperature.unique(), n_spectra)
+            cd_df = cd_df[cd_df['Temperature'].isin(temp_to_plot)]
+            qc_df = qc_df[qc_df['Temperature'].isin(temp_to_plot)]
+
         sns.lineplot(data=cd_df, x="Wavelength", y="value", ax=axsnest0[0], hue='Temperature', legend='full', palette=cmap).axhline(0, ls='--', color="black", linewidth=0.5)
         sns.lineplot(data=qc_df, x="Wavelength", y="value", ax=axsnest0[1], hue='Temperature', legend=False, palette=cmap)
 
@@ -299,10 +322,6 @@ def full_spectrum_melt(
         )
         axsnest1[1].set_ylabel(qc_label, fontsize=7)
         axsnest0[1].set_ylabel(qc_label, fontsize=7)
-
-        ## legend
-        axsnest1[0].legend(fontsize=6, frameon=False)
-        axsnest0[0].legend(fontsize=6, frameon=False)
 
         ## axis limits
         if qc_metric == 'HV':
@@ -337,7 +356,7 @@ def full_spectrum_melt(
                 title='Temperature (°C)', 
                 markerscale=2
             )
-        elif legend == 'continuos':
+        elif legend == 'continuous':
             axsnest0[0].legend().remove()
             cbar_ax = axsnest0[0].inset_axes([0.8, 0.1, 0.03, 0.3])
             norm = matplotlib.colors.Normalize(vmin=cd_df.Temperature.min(), vmax=cd_df.Temperature.max())

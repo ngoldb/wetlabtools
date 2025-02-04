@@ -1,6 +1,8 @@
 # Chirascan CD data analysis
 This module can import and process data from CD experiments conducted on chirascan instruments. The data must have been converted to csv. The module contains a central class cd_experiment, which should be able to process (almost) any data format recorded on chirascan instruments. Currently it does not support thermal melts with final measurements. It supports full spectrum thermal melts, single wavelength thermal melts. Thermal ramps can also contain recordings of the return ramp.
 
+You can find examples in this [notebook](../../examples/cd_examples.ipynb).
+
 ## Example usage
 You can import the data manually using the central cd_experiment class and process / plot the data on your own. The data will be formatted into long format allowing for easy plotting.
 ```
@@ -97,8 +99,9 @@ wetlabtools.chirascan.layouts.full_spectrum_melt(
     tmp_lim=(20,90), 
     melt_wavelength=222,
     legend='continuos',
+    n_spectra=5,
     save_png=True, 
     save_svg=False
 )
 ```
-Note that since full spectra were recorded at each temperature, you can specify the wavelength to plot in the melting curve. Additionally you can choose the style of the legend of the left plot (discrete, continuos, False for no legend).
+Note that since full spectra were recorded at each temperature, you can specify the wavelength to plot in the melting curve. Additionally you can choose the style of the legend of the left plot (discrete, continuos, False for no legend). For the left plot showing the full spectra you can choose the number of spectra being plotted (this will no affect the melting curve on the right) by adjusting ```n_spectra```. Setting ```n_spectra = 2``` will plot only the spectrum of the first and last temperature of your melt.
