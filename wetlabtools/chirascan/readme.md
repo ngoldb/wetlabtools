@@ -69,13 +69,36 @@ postmelt_file = '/path/to/post_melt_spectra.csv'
 melt_file = '/path/to/single_wavelength_melt.csv'
 blank_file = '/path/to/buffer.csv'
 
-wetlabtools.chirascan.layouts.single_wvl_melt(premelt_file=premelt_file, 
-                                              postmelt_file=postmelt_file, 
-                                              melt_file=melt_file, 
-                                              blank_file=blank_file, 
-                                              sample_data=sample_dict, 
-                                              wvl_lim=(200,260), 
-                                              tmp_lim=(20,90), 
-                                              save_png=True, 
-                                              save_svg=True)
+wetlabtools.chirascan.layouts.single_wvl_melt(
+    premelt_file=premelt_file, 
+    postmelt_file=postmelt_file, 
+    melt_file=melt_file, 
+    blank_file=blank_file, 
+    sample_data=sample_dict, 
+    wvl_lim=(200,260), 
+    tmp_lim=(20,90), 
+    save_png=True, 
+    save_svg=True
+)
 ```
+
+### Temperature melts from full spectra
+There is a layout to plot a similar figure from temperature melts with full spectra being recorded at each temperature:
+
+```python
+melt_file = '/path/to/cd_melt_spectra.csv'
+blank_file = '/path/to/buffer.csv'
+
+wetlabtools.chirascan.layouts.full_spectrum_melt(
+    melt_file=melt_file, 
+    blank_file=blank_file, 
+    sample_data=sample_dict, 
+    wvl_lim=(200,260), 
+    tmp_lim=(20,90), 
+    melt_wavelength=222,
+    legend='continuos',
+    save_png=True, 
+    save_svg=False
+)
+```
+Note that since full spectra were recorded at each temperature, you can specify the wavelength to plot in the melting curve. Additionally you can choose the style of the legend of the left plot (discrete, continuos, False for no legend).

@@ -1,7 +1,7 @@
 """Subpackage for processing data from Chorascan CD spectrometer"""
 
 from wetlabtools.chirascan.main import cd_experiment
-from wetlabtools.chirascan.layouts import single_wvl_melt
+from wetlabtools.chirascan.layouts import single_wvl_melt, full_spectrum_melt
 
 __author__ = "Nicolas Goldbach"
 __email__ = "nicolas.goldbach@epfl.ch"
