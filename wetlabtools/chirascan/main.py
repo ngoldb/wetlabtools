@@ -55,15 +55,15 @@ class cd_experiment(object):
         if unit.casefold() not in IMPLEMENTED:
             raise NotImplementedError(IMPLEMENTED)
         
-        if unit.casefold() in ['MRE', 'MREx103', 'de']:
-            self.data['CircularDichroism']
-            self.data['CircularDichroism']['value'] = self.data['CircularDichroism'].value / (self.data['CircularDichroism'].pathlength * self.data['CircularDichroism'].conc * self.data['CircularDichroism'].n_pep * 10 ** -6)
+        if unit.casefold() in ['mre', 'mrex103', 'de']:
+
+            self.data['CircularDichroism'].loc[:, 'value'] = self.data['CircularDichroism']['value'] / (self.data['CircularDichroism']['pathlength'] * self.data['CircularDichroism']['conc'] * self.data['CircularDichroism']['n_pep'] * 10 ** -6)
             
-            if unit.casefold() == 'MREx103':
-                self.data['CircularDichroism']['value'] = self.data['CircularDichroism']['value'] * 1e-3
+            if unit.casefold() == 'mrex103':
+                self.data['CircularDichroism'].loc[:, 'value'] = self.data['CircularDichroism']['value'] * 1e-3
                 self.cd_unit = 'MREx103' 
             elif unit.casefold() == 'de':
-                self.data['CircularDichroism']['value'] = self.data['CircularDichroism']['value'] / 3298
+                self.data['CircularDichroism'].loc[:, 'value'] = self.data['CircularDichroism']['value'] / 3298
                 self.cd_unit = 'de'
             else:   
                 self.cd_unit = 'MRE'
