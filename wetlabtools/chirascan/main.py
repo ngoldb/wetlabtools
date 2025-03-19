@@ -46,6 +46,18 @@ class cd_experiment(object):
         # make sure wavelength is of type int
         self.data["CircularDichroism"]['Wavelength'] = self.data["CircularDichroism"]['Wavelength'].astype(int)
 
+        # annotate final measurement
+        try:
+            self.data["CircularDichroism"].loc[:, "is_final_measurement"] = self.data['CircularDichroism']['Temperature'].str.contains('.1')
+            if any(self.data["CircularDichroism"]["is_final_measurement"]):
+                self.final_measurement = True
+            else:
+                self.final_measurement = False
+        except KeyError:
+            self.final_measurement = False
+        except AttributeError:
+            self.final_measurement = False
+
         # record data format of cd signal
         self.cd_unit = 'mdeg'
 
@@ -125,3 +137,6 @@ class cd_experiment(object):
         
     def get_cd_unit(self):
         return self.cd_unit
+    
+    def has_final_measurement(self):
+        return self.final_measurement
