@@ -103,4 +103,15 @@ def data2df(data, dimensions, cells):
 
             data[prop] = df_tmp
 
+    # annotating final measurement
+    for prop in data.keys():
+        try:
+            data[prop]["is_final_measurement"] = data[prop]['Temperature'].str.contains('.1')
+        except:
+            data[prop]["is_final_measurement"] = False
+        if any(data[prop]["is_final_measurement"]):
+            data[prop]['Temperature'] = data[prop]['Temperature'].apply(lambda x: x.strip('.1'))
+        
+        data[prop]['Temperature'] = data[prop]['Temperature'].astype(int)
+
     return data
