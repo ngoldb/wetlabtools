@@ -111,7 +111,9 @@ def data2df(data, dimensions, cells):
             data[prop]["is_final_measurement"] = False
         if any(data[prop]["is_final_measurement"]):
             data[prop]['Temperature'] = data[prop]['Temperature'].apply(lambda x: x.strip('.1'))
-        
-        data[prop]['Temperature'] = data[prop]['Temperature'].astype(int)
+        try:
+            data[prop]['Temperature'] = data[prop]['Temperature'].astype(int)
+        except KeyError:
+            pass
 
     return data
