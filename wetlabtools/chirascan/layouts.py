@@ -4,8 +4,10 @@ This submodule contains layouts to present CD data
 
 import os
 import logging
+import warnings
 import matplotlib
 import numpy as np
+import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -195,8 +197,6 @@ def single_wvl_melt(premelt_file: str, postmelt_file: str, melt_file: str, blank
         plt.close('all')
 
 
-# TODO
-# - account for final measurement after melt
 def full_spectrum_melt(
         melt_file: str, 
         blank_file: str=None, 
@@ -211,6 +211,7 @@ def full_spectrum_melt(
         melt_wavelength: int=222,
         n_spectra: int=999,
         legend: str='continuous',
+        show_final_measurement: bool=False,
         save_png: bool=False, 
         save_svg: bool=False
     ):
@@ -228,16 +229,24 @@ def full_spectrum_melt(
     melt_wavelength: int, wavelength to plot for the melting curve
     n_spectra: int, number of spectra to plot (does not affect melting curve)
     legend: str, type of legend to generate ['discrete', 'continuous'] - False if no legend should be generated
+    show_final_measurement: bool, whether to remove the final measurement after temperature melt
     save_png: bool, whether to save the figure as png
     save_svg: bool, whether to save the figure as svg
 
     Function to plot data from a temperature melt experiment with full spectra recorded. 
-    Currently does not support to plot final measurements after heat ramp
     """
 
     melt = cd_experiment(melt_file, sample_data=sample_data)
-    melt.subtract_blank(blank_file)
-    melt.convert('mrex103')
+    if blank_file:
+        melt.subtract_blank(blank_file)
+    try:
+        melt.convert('mrex103')
+    except KeyError:
+        warnings.warn("failed to convert cd unit - did you provide the sample data?")
+
+    # sanity check for final measurement
+    if show_final_measurement and not melt.has_final_measurement():
+        warnings.warn('You are trying to show a final measurement, but the data does not contain a final measurement')
 
     # account for user input
     qc_metrics = ['HV', 'Absorbance']
@@ -266,10 +275,11 @@ def full_spectrum_melt(
         cd_df = df['CircularDichroism']
         qc_df = df[qc_metric]
 
-        if cd_df.Temperature.dtype != int:
-            cd_df.loc[:, 'Temperature'] = cd_df.Temperature.astype(int)
-        if qc_df.Temperature.dtype != int:
-            qc_df.loc[:, 'Temperature'] = qc_df.Temperature.astype(int)
+        # handle final measurement
+        if melt.has_final_measurement() and show_final_measurement:
+            cd_final_spectrum = cd_df[cd_df['is_final_measurement']].copy()
+
+        cd_df = cd_df[cd_df['is_final_measurement'] != True]
 
         # setting up user provided limits
         if wvl_lim:
@@ -283,6 +293,8 @@ def full_spectrum_melt(
         if not show_ci:
             cd_df = cd_df.groupby(['Wavelength', 'Temperature'], as_index=False)['value'].mean()
             qc_df = qc_df.groupby(['Wavelength', 'Temperature'], as_index=False)['value'].mean()
+            if melt.has_final_measurement() and show_final_measurement:
+                cd_final_spectrum = cd_final_spectrum.groupby(['Wavelength', 'Temperature'], as_index=False)['value'].mean()
 
         # prepare data frame for melting plot
         melt_cd = cd_df[cd_df['Wavelength'] == melt_wavelength]
@@ -294,8 +306,12 @@ def full_spectrum_melt(
             cd_df = cd_df[cd_df['Temperature'].isin(temp_to_plot)]
             qc_df = qc_df[qc_df['Temperature'].isin(temp_to_plot)]
 
+        # spectra plot (left)
         sns.lineplot(data=cd_df, x="Wavelength", y="value", ax=axsnest0[0], hue='Temperature', legend='full', palette=cmap).axhline(0, ls='--', color="black", linewidth=0.5)
         sns.lineplot(data=qc_df, x="Wavelength", y="value", ax=axsnest0[1], hue='Temperature', legend=False, palette=cmap)
+        
+        if show_final_measurement and melt.has_final_measurement():
+            sns.lineplot(data=cd_final_spectrum, x='Wavelength', y='value', ax=axsnest0[0], color='black', linestyle='--', legend='full')
 
         # melting plot (right)
         subfigsnest1 = subfigs[1].subfigures(1, 1)
@@ -315,11 +331,16 @@ def full_spectrum_melt(
         ## labels
         axsnest1[1].set_xlabel('Temperature ($^\circ$C)\n\n', fontsize=7)
         axsnest0[1].set_xlabel('Wavelength ($\mathrm{nm}$)\n\n', fontsize=7)
-        axsnest0[0].set_ylabel('$\mathrm{MRE}$\n  $\mathrm{(deg\ cm^{2}\ dmol^{-1}\ res^{-1}\ x10^{3}}$)', fontsize=7)
-        axsnest1[0].set_ylabel(
-            f'$\\mathrm{{MRE_{{{melt_wavelength}}}}}$\n  $\\mathrm{{(deg\\ cm^{{2}}\\ dmol^{{-1}}\\ res^{{-1}}\\ x10^{{3}})}}$',
-            fontsize=7
-        )
+
+        if melt.get_cd_unit() == 'MREx103':
+            ylabel1 = '$\mathrm{MRE}$\n  $\mathrm{(deg\ cm^{2}\ dmol^{-1}\ res^{-1}\ x10^{3}}$)'
+            ylabel2 = f'$\\mathrm{{MRE_{{{melt_wavelength}}}}}$\n  $\\mathrm{{(deg\\ cm^{{2}}\\ dmol^{{-1}}\\ res^{{-1}}\\ x10^{{3}})}}$'
+        else:
+            ylabel1 = '$\mathrm{mdeg}$'
+            ylabel2 = f'$\\mathrm{{mdeg_{{{melt_wavelength}}}}}$'
+
+        axsnest0[0].set_ylabel(ylabel1, fontsize=7)
+        axsnest1[0].set_ylabel(ylabel2, fontsize=7)
         axsnest1[1].set_ylabel(qc_label, fontsize=7)
         axsnest0[1].set_ylabel(qc_label, fontsize=7)
 
@@ -394,3 +415,5 @@ def full_spectrum_melt(
 
             plt.show()
             plt.close('all')
+    
+    return None
