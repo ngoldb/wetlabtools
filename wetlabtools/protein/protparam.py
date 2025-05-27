@@ -125,12 +125,13 @@ class Protein(object):
 
 
 
-def batch_prot_param(fasta_file: str, csv: str='', n_term: str='', c_term: str='') -> pd.DataFrame:
+def batch_prot_param(fasta_file: str, csv: str='', n_term: str='', c_term: str='', oligomer: int=1) -> pd.DataFrame:
     """
     fasta_file: str, path to the fasta file with the protein sequences (1-letter code)
     csv: str, will write a csv file to this file if provided
     n_term: str, amino acid sequence to add to the N-terminus of the protein (e.g. 'M')
     c_term: str, amino acid sequence to add to the C-terminus of the protein (e.g. 'GGSHHHHHH')
+    oligomer: int, oligomeric state (e.g. 1 for monomer, 2 for dimer, 3 for trimer...)
 
     Function to batch-process a list of sequences in a fasta file and return a 
     dataframe with ProtParam output. It will save a csv file if requested.
@@ -153,7 +154,7 @@ def batch_prot_param(fasta_file: str, csv: str='', n_term: str='', c_term: str='
         name = record.id
 
         # create protein from sequence
-        sequence = n_term + record.seq + c_term
+        sequence = (n_term + record.seq + c_term) * oligomer
         protein = Protein(sequence)
         prot_param = protein.print_protparam(quiet=True)
         tmp_df = pd.DataFrame(prot_param, index=[name])
