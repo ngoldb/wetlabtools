@@ -3,8 +3,8 @@
 from wetlabtools import plot
 from wetlabtools import protein
 from wetlabtools import tecan
-from wetlabtools import spark
 from wetlabtools import chirascan
+from wetlabtools import cloning
 
 __author__ = "Nicolas Goldbach"
 __email__ = "nicolas.goldbach@epfl.ch"
