@@ -5,6 +5,7 @@ from wetlabtools import protein
 from wetlabtools import tecan
 from wetlabtools import chirascan
 from wetlabtools import cloning
+from wetlabtools import spark
 
 __author__ = "Nicolas Goldbach"
 __email__ = "nicolas.goldbach@epfl.ch"
