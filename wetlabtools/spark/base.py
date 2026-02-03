@@ -2,7 +2,8 @@
 
 from dataclasses import dataclass
 
-from wetlabtools.spark.parse import parse_header
+from wetlabtools.spark.parse import parse_header, parse_action_list
+from wetlabtools.spark.workflow import workflow_from_action_list
 
 class Device:
 
@@ -33,9 +34,10 @@ class Experiment:
     """Class for Tecan Spark experiments"""
 
     def __init__(self, result_file: str):
+        self.file = result_file
 
         # parse and store meta data
-        meta_data = parse_header(result_file)
+        meta_data = parse_header(self.file)
 
         device_name = meta_data['Device'].split(' ')[0]
         serial_number = meta_data['Device'].split(' ')[-1]
@@ -46,7 +48,6 @@ class Experiment:
         version = meta_data['Application'].split(' ')[-1]
         self.application = SoftwareApplication(software, version)
 
-        self.file = result_file
         self.user = meta_data['User']
         self.method = meta_data["Method"]
         self.system = meta_data["System"]
@@ -56,8 +57,11 @@ class Experiment:
         self.lid_lifter = meta_data["Lid lifter"]
         self.humidity_cassette = meta_data["Humidity Cassette"]
         self.smooth_mode = meta_data["Smooth mode"]
+        self.total_wells = int(self.plate.split(' ')[0][4:-3])
 
-        # parse and populate measurement protocol
+        # parse and populate measurement workflow
+        action_list = parse_action_list(self.file)
+        self.workflow = workflow_from_action_list(action_list)
 
     def __str__(self) -> str:
         return f"Tecan Spark Experiment from {self.date} {self.time} by {self.user}\nFile: {self.file}"
