@@ -83,6 +83,7 @@ wetlabtools.chirascan.layouts.single_wvl_melt(
     save_svg=True
 )
 ```
+![alt text](../../media/cd_single_wvl_melt.png)
 
 ### Temperature melts from full spectra
 There is a layout to plot a similar figure from temperature melts with full spectra being recorded at each temperature:
@@ -105,4 +106,6 @@ wetlabtools.chirascan.layouts.full_spectrum_melt(
     save_svg=False
 )
 ```
+![alt text](../../media/cd_full_spectrum_melt.png)
+
 Note that since full spectra were recorded at each temperature, you can specify the wavelength to plot in the melting curve. Additionally you can choose the style of the legend of the left plot (discrete, continuos, False for no legend). For the left plot showing the full spectra you can choose the number of spectra being plotted (this will no affect the melting curve on the right) by adjusting ```n_spectra```. Setting ```n_spectra = 2``` will plot only the spectrum of the first and last temperature of your melt. If you recorded a final measurement after returning to the start temperature after the thermal melt, you can plot it by specifying ```show_final_measurement=True```. Note that this only works if the final measurement was recorded at the same temperature as the start temperature.
