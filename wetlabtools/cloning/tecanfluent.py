@@ -22,18 +22,9 @@ def make_cloning_worklists(df, rxn, settings):
     # sort dataframe by source well index and assign destination well index
     rxn_df.sort_values(by='src_numerical', ascending=True, inplace=True)
     rxn_df['dest_numerical'] = range(1, len(rxn_df) + 1)
+    rxn_df['dest_label'] = settings['dest_rack_label']
 
     ## Create GWL command lines ##
-
-    # Master Mix
-    # is a regular Reagent Distribution - could be removed and replaced accordingly in FluentControl (more robust?)
-    liquid_class = "MasterMix Low Volume Multi"
-    aspirate_parameters = f"{settings['src_rack_label']};;;1;1"
-    dispense_parameters = f"{settings['dest_rack_label']};;;1;{n_rxn}"
-    distribute_command = f"R;{aspirate_parameters};{dispense_parameters};{settings['mm_volume']};{liquid_class};12;12;0\n"
-
-    with open(settings['mm_gwl_file'], "w") as fobj:
-        fobj.writelines(distribute_command)
 
     # Vectors
     liquid_class = "Water Contact Wet Multi low volume"
@@ -68,6 +59,53 @@ def make_cloning_worklists(df, rxn, settings):
         fobj.writelines(gwl_lines)
 
     print(f"wrote {rxn} worklists to {os.path.dirname(settings['mm_gwl_file'])}")
+    return rxn_df
+
+
+def make_transformation_worklist(dfs: list[pd.DataFrame], settings):
+
+    cell_gwl_lines = []
+    dna_gwl_lines = []
+
+    for transform_df in dfs:
+        # distribute strains
+        dest_rack_label = transform_df['dest_label'].unique()[0]
+        n_transforms = len(transform_df)
+
+        for strain in transform_df['Transform'].unique():
+            exclude_wells = list(transform_df.loc[transform_df['Transform']!=strain]['dest_numerical'].values)
+            
+            aspirate_parameters = f"{strain};;;1;1"
+            dispense_parameters = f"{dest_rack_label};;;1;{n_transforms}"
+            distribute_command = f"R;{aspirate_parameters};{dispense_parameters};{settings['cell_volume']};;1;12;0"
+
+            if len(exclude_wells) == 0:
+                distribute_command = distribute_command + '\n'
+            else:
+                exclude_wells = ";".join([str(x) for x in exclude_wells])
+                distribute_command = distribute_command + f";{exclude_wells}\n"
+            cell_gwl_lines.append(distribute_command)
+
+        # add dna to cells
+        for i, row in transform_df.iterrows():
+            src_well = row["src_numerical"]
+            dest_well = row["dest_numerical"]
+            src_rack_label = row["src_label"]
+            dest_rack_label = row["dest_label"]
+
+            aspirate_command = f"A;{src_rack_label};;;{src_well};;{settings['dna_volume']};;;;\n"
+            dispense_command = f"D;{dest_rack_label};;;{dest_well};;{settings['dna_volume']};;;;\nW;\n"
+            dna_gwl_lines.append(aspirate_command)
+            dna_gwl_lines.append(dispense_command)
+
+    with open(settings["cell_distribution_gwl"], "w") as fobj:
+        fobj.writelines(cell_gwl_lines)
+
+    with open(settings["dna_distribution_gwl"], "w") as fobj:
+        fobj.writelines(dna_gwl_lines)
+
+    print(f"wrote transformation worklists to {os.path.dirname(settings['cell_distribution_gwl'])}")
+    return
 
 
 def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, cautios: bool=True) -> pd.DataFrame:
@@ -87,8 +125,9 @@ def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, caut
     """
     
     # vector names must match exactly to ensure compatibility with worktable
-    ALLOWED_VECTORS = ['LM670', 'LM627', 'PHLSEC', 'PHLSEC_FC', 'CUSTOM']
+    ALLOWED_VECTORS = ['LM670', 'LM627', 'PHLSEC', 'PHLSEC_FC', 'CUSTOM_1', 'CUSTOM_2', 'CUSTOM_3']
     CLONING_METHODS = ['GGA', 'GIBSON']
+    TRANSFORMATION_STRAINS = ['HB101', 'T7EXPRESS', 'NEBSTABLE', 'DH5A', 'BL21', 'CUSTOM_1', 'CUSTOM_2', 'CUSTOM_3']
     VERSION = 0.1
     
     # mapping alpha-numerical well indices to numerical indices
@@ -114,18 +153,14 @@ def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, caut
     # sanity checks
     df['Cloning'] = df['Cloning'].str.upper()
     df['Vector'] = df['Vector'].str.upper()
+    assert df['Cloning'].isin(CLONING_METHODS).all(), f"Unknown cloning method(s): {list(df.loc[~df['Cloning'].isin(CLONING_METHODS)]['Cloning'].unique())}. Cloning methods must be {CLONING_METHODS}"
+    assert df['Vector'].isin(ALLOWED_VECTORS).all(), f"Unknown vector: {list(df.loc[~df['Vector'].isin(ALLOWED_VECTORS)]['Vector'].unique())}. Vectors must be {ALLOWED_VECTORS}"
     
     # create directory and files
     if cautios & os.path.exists(os.path.join(gwl_output, plate_id)):
         raise FileExistsError("Output directory already exists. Either disable cautios mode or delete output directory")    
     os.makedirs(os.path.join(gwl_output, plate_id), exist_ok=True)
     cloning_summary_file = os.path.join(gwl_output, plate_id, f"{plate_id}_reactions.csv")
-
-    # summary file
-    n_gga = len(df.loc[df['Cloning']=="GGA"])
-    n_gib = len(df.loc[df['Cloning']=="GIBSON"])
-    with open(cloning_summary_file, "w") as fobj:
-        fobj.writelines(f"number_gga,number_gibson,version\n{n_gga},{n_gib},{VERSION}")
     
     # Cloning settings
     gga_settings = {
@@ -152,10 +187,69 @@ def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, caut
         "insert_gwl_file": os.path.join(gwl_output, plate_id, f"{plate_id}_gib_inserts.gwl")
     }
 
+    n_gga = len(df.loc[df['Cloning']=="GGA"])
+    n_gib = len(df.loc[df['Cloning']=="GIBSON"])
+
     if n_gga > 0:
-        make_cloning_worklists(df, "GGA", gga_settings)
+        gga_df = make_cloning_worklists(df, "GGA", gga_settings)
+    else:
+        gga_df = pd.DataFrame()
 
     if n_gib > 0:
-        make_cloning_worklists(df, "GIBSON", gibson_settings)
+        gib_df = make_cloning_worklists(df, "GIBSON", gibson_settings)
+    else:
+        gib_df = pd.DataFrame()
 
-    return df
+    # ensure order from Twist plate
+    cloning_df = pd.concat([gga_df, gib_df], ignore_index=True)
+    cloning_df.sort_values(by='src_numerical', inplace=True)
+    
+    ### TRANSFORMATION ###
+    transformations = []
+    transformation_df = cloning_df.copy()
+    transformation_df.dropna(subset=["Transform_1", "Transform_2"], how='all', inplace=True) 
+    transformation_df.drop('src_numerical', axis=1, inplace=True)
+    transformation_df.rename({'dest_numerical': 'src_numerical', 'dest_label': 'src_label'}, inplace=True, axis=1)
+
+    # first plate is cloning strain
+    transform_1_df = transformation_df.copy()
+    transform_1_df.dropna(subset="Transform_1", inplace=True)
+    n_transform_1 = len(transform_1_df)
+    if n_transform_1 > 0:
+        transform_1_df['Transform_1'] = transform_1_df['Transform_1'].str.upper()
+        assert transform_1_df['Transform_1'].isin(TRANSFORMATION_STRAINS).all(), f"Unknown transformation strain: {list(transformation_df.loc[~transformation_df['Transform_1'].isin(TRANSFORMATION_STRAINS)]['Transform_1'].unique())}. Transformation strains must be {TRANSFORMATION_STRAINS}"
+        transform_1_df['dest_label'] = "96 Well PCR Transform 1"
+        transform_1_df['dest_numerical'] = range(1, len(transform_1_df)+1)
+        transform_1_df.rename({'Transform_1': 'Transform',}, inplace=True, axis=1)
+        transform_1_df.drop('Transform_2', inplace=True, axis=1)
+        transformations.append(transform_1_df)
+        
+    # second plate is expression strain
+    transform_2_df = transformation_df.copy()
+    transform_2_df.dropna(subset="Transform_2", inplace=True)
+    n_transform_2 = len(transform_2_df)
+    if n_transform_2 > 0:
+        transform_2_df['Transform_2'] = transform_2_df['Transform_2'].str.upper()
+        assert transform_2_df['Transform_2'].isin(TRANSFORMATION_STRAINS).all(), f"Unknown transformation strain: {list(transformation_df.loc[~transformation_df['Transform_2'].isin(TRANSFORMATION_STRAINS)]['Transform_2'].unique())}. Transformation strains must be {TRANSFORMATION_STRAINS}"
+        transform_2_df['dest_label'] = "96 Well PCR Transform 2"
+        transform_2_df['dest_numerical'] = range(1, len(transform_2_df)+1)
+        transform_2_df.rename({'Transform_2': 'Transform',}, inplace=True, axis=1)
+        transform_2_df.drop('Transform_1', inplace=True, axis=1)
+        transformations.append(transform_2_df)
+        
+    # create gwl files
+    transform_settings = {
+        "cell_volume": 20,
+        "dna_volume": 2,
+        "cell_distribution_gwl": os.path.join(gwl_output, plate_id, f"{plate_id}_distribute_cells.gwl"),
+        "dna_distribution_gwl": os.path.join(gwl_output, plate_id, f"{plate_id}_distribute_dna.gwl")
+    }
+    if len(transformations) > 0:
+        make_transformation_worklist(transformations, transform_settings)
+
+    # summary file
+    with open(cloning_summary_file, "w") as fobj:
+        fobj.writelines(f"number_gga,number_gibson,n_transform_1,n_transform_2,version\n{n_gga},{n_gib},{n_transform_1},{n_transform_2},{VERSION}")
+
+    # TODO: make plate maps of the resulting cloning and transformation plates
+    return df, cloning_df, transform_1_df, transform_2_df
