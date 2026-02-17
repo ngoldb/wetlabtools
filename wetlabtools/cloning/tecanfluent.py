@@ -7,6 +7,7 @@ specific to the cloning workflow and the config of the Tecan Fluent.
 import os 
 import pandas as pd
 
+from wetlabtools.plate import Plate
 
 def make_cloning_worklists(df, rxn, settings):
     """
@@ -138,6 +139,7 @@ def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, caut
         for col in cols
         for row in rows
     }
+    to_alphanumerical = {v: k for k, v in to_numerical.items()}
 
     df = pd.read_excel(plate_map_path)
 
@@ -251,5 +253,39 @@ def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, caut
     with open(cloning_summary_file, "w") as fobj:
         fobj.writelines(f"number_gga,number_gibson,n_transform_1,n_transform_2,version\n{n_gga},{n_gib},{n_transform_1},{n_transform_2},{VERSION}")
 
-    # TODO: make plate maps of the resulting cloning and transformation plates
+    # Plate maps for users
+    if n_gga > 0:
+        gga_map_xlsx = os.path.join(gwl_output, plate_id, f"{plate_id}_gga_plate_map.xlsx")
+        gga_map = gga_df[['Name', 'Vector', 'dest_numerical']].copy()
+        gga_map['Well Location'] = gga_map['dest_numerical'].map(to_alphanumerical)
+        gga_map.drop('dest_numerical', inplace=True, axis=1)
+        plate = Plate.from_long_dataframe(gga_map)
+        plate.to_plate_map_excel(gga_map_xlsx)
+
+    if n_gib > 0:
+        gib_map_xlsx = os.path.join(gwl_output, plate_id, f"{plate_id}_gibson_plate_map.xlsx")
+        gib_map = gib_df[['Name', 'Vector', 'dest_numerical']].copy()
+        gib_map['Well Location'] = gib_map['dest_numerical'].map(to_alphanumerical)
+        gib_map.drop('dest_numerical', inplace=True, axis=1)
+        plate = Plate.from_long_dataframe(gib_map)
+        plate.to_plate_map_excel(gib_map_xlsx)
+
+    if n_transform_1 > 0:
+        trf_1_map_xlsx = os.path.join(gwl_output, plate_id, f"{plate_id}_transform_1_plate_map.xlsx")
+        trf_1_map = transform_1_df[['Name', 'Transform', 'dest_numerical']].copy()
+        trf_1_map['Well Location'] = trf_1_map['dest_numerical'].map(to_alphanumerical)
+        trf_1_map.rename({'Transform': 'Strain'}, inplace=True, axis=1)
+        trf_1_map.drop('dest_numerical', inplace=True, axis=1)
+        plate = Plate.from_long_dataframe(trf_1_map)
+        plate.to_plate_map_excel(trf_1_map_xlsx)
+    
+    if n_transform_2 > 0:
+        trf_2_map_xlsx = os.path.join(gwl_output, plate_id, f"{plate_id}_transform_2_plate_map.xlsx")
+        trf_2_map = transform_1_df[['Name', 'Transform', 'dest_numerical']].copy()
+        trf_2_map['Well Location'] = trf_2_map['dest_numerical'].map(to_alphanumerical)
+        trf_2_map.rename({'Transform': 'Strain'}, inplace=True, axis=1)
+        trf_2_map.drop('dest_numerical', inplace=True, axis=1)
+        plate = Plate.from_long_dataframe(trf_2_map)
+        plate.to_plate_map_excel(trf_2_map_xlsx)
+
     return df, cloning_df, transform_1_df, transform_2_df
