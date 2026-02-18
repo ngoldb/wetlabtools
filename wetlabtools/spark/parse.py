@@ -84,7 +84,7 @@ def parse_action_list(filepath: str, sheet_name=0):
                     break
             
             # join remaining cells into one string
-            content = [str(c).lower() for c in cells if c != ""]
+            content = [str(c) for c in cells if c != ""]
             actions.append((indent_level, content))
     
     return actions
