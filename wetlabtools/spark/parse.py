@@ -2,6 +2,7 @@
 
 import openpyxl
 import pandas as pd
+from typing import List, Any, Optional
 from wetlabtools.spark.utilities import row2list
 
 
@@ -23,7 +24,7 @@ def parse_header(excel_sheet):
             key = row_list[0]
             val = row_list[1:]
 
-        return (key.strip(':'), val)
+        return (key.strip().strip(':'), val)
         
     wb_obj = openpyxl.load_workbook(excel_sheet)
     sheet_obj = wb_obj.active
@@ -45,7 +46,7 @@ def parse_header(excel_sheet):
         
         elif config:
             key, val = format_config(row_list)
-            meta_data[key] = val
+            meta_data[key.strip()] = val
 
     return meta_data
 
@@ -87,3 +88,127 @@ def parse_action_list(filepath: str, sheet_name=0):
             actions.append((indent_level, content))
     
     return actions
+
+
+class ParseContext:
+    """
+    Sequential parsing of excel file
+
+    Parameters
+    ----------------
+    df: pd.DataFrame
+        input dataframe from excel file. No headers
+
+    drop_empty_cells: bool
+        If True only cells with values will be returned. Default: False
+    """
+
+    def __init__(self, df: pd.DataFrame, drop_empty_cells: bool=False):
+        self.rows: List[List[Any]] = (
+            df.fillna("").astype(str).values.tolist()
+        )
+        self.cursor: int = 0
+        self.total_rows: int = len(self.rows)
+        self.drop_empty_cells = drop_empty_cells
+
+    # -------------------------
+    # Internal row formatting
+    # -------------------------
+
+    def _format_row(
+        self,
+        row: List[str],
+        drop_empty: Optional[bool]=None
+    ) -> List[str]:
+
+        if drop_empty is None:
+            drop_empty = self.drop_empty_cells
+
+        if drop_empty:
+            row = [cell for cell in row if cell != ""]
+
+        return row
+    
+    # -------------------------
+    # Core navigation
+    # -------------------------
+
+    def eof(self) -> bool:
+        return self.cursor >= self.total_rows
+
+    def current(self, drop_empty: Optional[bool]=None) -> List[str]:
+        if self.eof():
+            raise IndexError("ParseContext: cursor out of bounds")
+        row = self.rows[self.cursor]
+        return self._format_row(row, drop_empty)
+
+    def peek(self, offset: int=0, drop_empty: Optional[bool]=None) -> Optional[List[str]]:
+        idx = self.cursor + offset
+        if 0 <= idx < self.total_rows:
+            return self._format_row(self.rows[idx], drop_empty)
+        return None
+
+    def advance(self, n: int=1) -> None:
+        self.cursor += n
+        if self.cursor > self.total_rows:
+            raise IndexError("ParseContext: advanced beyond file")
+
+    # -------------------------
+    # Convenience helpers
+    # -------------------------
+
+    def skip_empty_rows(self) -> None:
+        while not self.eof() and all(cell == "" for cell in self.current()):
+            self.advance()
+
+    def read_until_empty_row(self, drop_empty: Optional[bool]=None) -> List[List[str]]:
+        """
+        Read consecutive non-empty rows.
+        Stops at first fully empty row.
+        """
+        block = []
+        while not self.eof() and not self.current(drop_empty=True)==[]:
+            block.append(self.current(drop_empty))
+            self.advance()
+        return block
+
+    def read_while(self, condition, drop_empty: Optional[bool]=None) -> List[List[str]]:
+        """
+        Read rows while condition(row) is True.
+        """
+        block = []
+        while not self.eof() and condition(self.current(drop_empty)):
+            block.append(self.current(drop_empty))
+            self.advance()
+        return block
+
+    def read_until(self, condition, drop_empty: Optional[bool]=None) -> List[List[str]]:
+        """
+        Read rows until condition(row) is True.
+        """
+        block = []
+        while not self.eof() and not condition(self.current(drop_empty)):
+            block.append(self.current(drop_empty))
+            self.advance()
+        return block
+    
+
+def block_2_dict(block):
+    """creates a dict from a block (list of rows)"""
+    return {
+        row[0]: row[1] if len(row)==2 else row[1:] 
+        for row in block
+    }
+
+
+class ParseError(Exception):
+    """Base class for parsing-related errors."""
+    pass
+
+
+class BlockMismatchError(ParseError):
+
+    def __init__(self, action, cursor):
+        super().__init__(
+            f"{action} failed to parse at row {cursor}. Block format did not match expected format"
+        )
