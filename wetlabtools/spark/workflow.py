@@ -35,6 +35,11 @@ class Workflow:
         for action in self.root_actions:
             desc += "\n" + action.to_tree(1)
         return desc
+    
+    def iter_execution_order(self):
+        for action in self.root_actions:
+            yield action
+            yield from action.find_descendants()
 
     def __repr__(self):
         return f"{self.__class__.__name__}(root_actions={len(self.root_actions)})"

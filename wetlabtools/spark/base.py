@@ -1,8 +1,9 @@
 '''Module for tecan spark experiments'''
 
+import pandas as pd
 from dataclasses import dataclass
 
-from wetlabtools.spark.parse import parse_header, parse_action_list
+from wetlabtools.spark.parse import parse_header, parse_action_list, ParseContext
 from wetlabtools.spark.workflow import workflow_from_action_list
 
 class Device:
@@ -56,12 +57,22 @@ class Experiment:
         self.plate = meta_data["Plate"]
         self.lid_lifter = meta_data["Lid lifter"]
         self.humidity_cassette = meta_data["Humidity Cassette"]
-        self.smooth_mode = meta_data["Smooth mode"]
         self.total_wells = int(self.plate.split(' ')[0][4:-3])
+
+        # not always there
+        try:
+            self.smooth_mode = meta_data["Smooth mode"]
+        except: pass
 
         # parse and populate measurement workflow
         action_list = parse_action_list(self.file)
         self.workflow = workflow_from_action_list(action_list)
+
+        # now parse action blocks
+        df = pd.read_excel(self.file, header=None)
+        ctx = ParseContext(df, drop_empty_cells=False)
+        for action in self.workflow.iter_execution_order():
+            action.parse_block(ctx)
 
     def __str__(self) -> str:
         return f"Tecan Spark Experiment from {self.date} {self.time} by {self.user}\nFile: {self.file}"
