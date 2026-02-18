@@ -82,7 +82,7 @@ class PlateRegion:
         return mask
 
     def __repr__(self):
-        return f"PlateRegion('{self.region_str}', wells={len(self.wells)}, shape={self.rows}x{self.cols})"
+        return f"PlateRegion('{self.region_str}', selected_wells={len(self.wells)}, total_wells={self.num_wells}, shape={self.rows}x{self.cols})"
     
 
 class Well:
