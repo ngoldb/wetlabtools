@@ -1,7 +1,8 @@
 '''Module to create protocols from Tecan experiment files'''
 
 from typing import List, Optional, Dict, Any
-from wetlabtools.spark.actions import Action, create_action
+from wetlabtools.spark.actions.base_action import Action
+from wetlabtools.spark.action_registry import create_action
 
 
 class Workflow:

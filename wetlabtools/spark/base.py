@@ -71,6 +71,11 @@ class Experiment:
         # now parse action blocks
         df = pd.read_excel(self.file, header=None)
         ctx = ParseContext(df, drop_empty_cells=False)
+        _ = ctx.read_until(
+            lambda row: "List of actions in this measurement script:" in row[0],
+            drop_empty=False
+        )
+        _ =ctx.read_until_empty_row()
         for action in self.workflow.iter_execution_order():
             action.parse_block(ctx)
 

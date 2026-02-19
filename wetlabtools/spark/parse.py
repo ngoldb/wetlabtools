@@ -1,6 +1,7 @@
 '''Module to parse tecan spark output'''
 
 import openpyxl
+import numpy as np
 import pandas as pd
 from typing import List, Any, Optional
 from wetlabtools.spark.utilities import row2list
@@ -201,6 +202,27 @@ def block_2_dict(block):
     }
 
 
+def df_from_plate_like_block(data_block, data_label: str='Value'):
+    """Melt single value data from a plate-like format into a long format df"""
+    
+    df = pd.DataFrame(
+        [r[1:] for r in data_block[1:]],
+        columns=data_block[0][1:],
+        index=[r[0] for r in data_block[1:]]
+    )
+
+    df.columns = df.columns.astype(float).astype(int)
+    df_long = df.stack().reset_index()
+    df_long.columns = ["Row", "Column", data_label]
+    df_long["Well"] = df_long["Row"] + df_long["Column"].astype(str)
+    df_long = df_long[["Well", data_label]]
+    df_long[data_label].replace('OVER', np.nan, inplace=True)
+    df_long[data_label].replace('', np.nan, inplace=True)
+    df_long[data_label] = df_long[data_label].astype(float)
+
+    return df_long
+
+
 class ParseError(Exception):
     """Base class for parsing-related errors."""
     pass
@@ -212,3 +234,4 @@ class BlockMismatchError(ParseError):
         super().__init__(
             f"{action} failed to parse at row {cursor}. Block format did not match expected format"
         )
+    
