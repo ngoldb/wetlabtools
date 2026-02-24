@@ -1,12 +1,14 @@
 import datetime
 import pandas as pd
 import numpy as np
-from wetlabtools.spark.actions.base_action import Action
-from wetlabtools.spark.actions.plate_action import PlateAction
-from wetlabtools.spark.actions.kinetic_action import KineticAction
+
 from wetlabtools.plate import PlateRegion
 from wetlabtools.spark.action_registry import register_action
 from wetlabtools.spark.parse import block_2_dict, df_from_plate_like_block
+
+from .base_action import Action
+from .plate_action import PlateAction
+from .kinetic_action import KineticAction
 
 @register_action("absorbance")
 class AbsorbanceAction(Action):
@@ -20,6 +22,13 @@ class AbsorbanceAction(Action):
         self._parse_data(ctx)
     
     def _parse_settings(self, ctx):
+
+        # determine kinetic mode
+        if self.get_parent(KineticAction):
+            self.kinetic = True
+        else:
+            self.kinetic = False
+
         _ = ctx.read_until(
             lambda row: row[0]=="Name" and row[1]==self.label,
             drop_empty=False
@@ -52,13 +61,9 @@ class AbsorbanceAction(Action):
         wells = parent_plate.total_wells
         self.region = PlateRegion(settings_dict['Part of Plate'], wells_total=wells)
 
-        # determine kinetic mode
-        if self.get_parent(KineticAction):
-            self.kinetic = True
-        else:
-            self.kinetic = False
         self.temperature = float(meta_data_dict['Temperature [°C]'])
         self.start_time = datetime.datetime.strptime(meta_data_dict['Start Time'], "%Y-%m-%d %H:%M:%S")
+    
     
     def _parse_data(self, ctx):
         if self.kinetic:
@@ -134,5 +139,5 @@ class AbsorbanceAction(Action):
                 )
                 data_block = ctx.read_until_empty_row(drop_empty=False)
                 self.data = df_from_plate_like_block(data_block, data_label='value')
-
-                # raise NotImplementedError('parsing single wavelength absorbance measurements without reference not implemented')
+        
+        # TODO: find end time

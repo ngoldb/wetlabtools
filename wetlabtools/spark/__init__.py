@@ -1,6 +1,6 @@
 """Subpackage for processing data from Tecan plate reader"""
 
-from wetlabtools.spark.base import Experiment
+from .base import Experiment
 
 __author__ = "Nicolas Goldbach"
 __email__ = "nicolas.goldbach@epfl.ch"
