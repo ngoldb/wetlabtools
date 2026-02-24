@@ -33,3 +33,20 @@ class ShakingAction(Action):
 
     def __init__(self):
         super().__init__(label="Shaking Control")
+
+    
+    def parse_block(self, ctx):
+        _ = ctx.read_until(
+            lambda row: "Start Time" in row[0],
+            drop_empty=False
+        )
+        if "Shaking" not in ''.join(ctx.peek(1, drop_empty=False)):
+            raise BlockMismatchError(self.__class__.__name__, ctx.cursor)
+        
+        block = ctx.read_until_empty_row(drop_empty=True)
+        block_dict = block_2_dict(block)
+        self.start_time = datetime.datetime.strptime(block_dict['Start Time'], "%Y-%m-%d %H:%M:%S")
+        self.mode = next((s for s in ["Linear", "Orbital", "Double orbital"] 
+                    if any(s in key for key in block_dict)), None)
+        self.settings = block_dict
+        
