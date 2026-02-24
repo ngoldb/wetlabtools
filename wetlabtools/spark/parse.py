@@ -211,6 +211,10 @@ def df_from_plate_like_block(data_block, data_label: str='Value'):
         index=[r[0] for r in data_block[1:]]
     )
 
+    try:
+        df.drop(labels='', axis=1, inplace=True)
+    except KeyError: pass
+    
     df.columns = df.columns.astype(float).astype(int)
     df_long = df.stack().reset_index()
     df_long.columns = ["Row", "Column", data_label]
