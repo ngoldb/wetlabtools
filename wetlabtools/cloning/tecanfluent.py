@@ -126,10 +126,10 @@ def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, caut
     """
     
     # vector names must match exactly to ensure compatibility with worktable
-    ALLOWED_VECTORS = ['LM670', 'LM627', 'PHLSEC', 'PHLSEC_FC', 'CUSTOM_1', 'CUSTOM_2', 'CUSTOM_3']
+    ALLOWED_VECTORS = ['LM670', 'LM627', 'PHLSEC', 'PHLSEC_FC', 'CUSTOM_VECTOR_1', 'CUSTOM_VECTOR_2', 'CUSTOM_VECTOR_3']
     CLONING_METHODS = ['GGA', 'GIBSON']
-    TRANSFORMATION_STRAINS = ['HB101', 'T7EXPRESS', 'NEBSTABLE', 'DH5A', 'BL21', 'CUSTOM_1', 'CUSTOM_2', 'CUSTOM_3']
-    VERSION = 0.1
+    TRANSFORMATION_STRAINS = ['HB101', 'T7EXPRESS', 'NEBSTABLE', 'DH5A', 'BL21', 'CUSTOM_STRAIN_1', 'CUSTOM_STRAIN_2', 'CUSTOM_STRAIN_3']
+    VERSION = 0.2
     
     # mapping alpha-numerical well indices to numerical indices
     rows = list("ABCDEFGH")
@@ -251,7 +251,7 @@ def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, caut
 
     # summary file
     with open(cloning_summary_file, "w") as fobj:
-        fobj.writelines(f"number_gga,number_gibson,n_transform_1,n_transform_2,version\n{n_gga},{n_gib},{n_transform_1},{n_transform_2},{VERSION}")
+        fobj.writelines(f"number_gga,number_gibson,number_transform_1,number_transform_2,worklisting_version\n{n_gga},{n_gib},{n_transform_1},{n_transform_2},{VERSION}")
 
     # Plate maps for users
     if n_gga > 0:
