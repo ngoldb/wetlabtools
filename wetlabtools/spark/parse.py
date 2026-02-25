@@ -202,6 +202,10 @@ def block_2_dict(block):
     }
 
 
+# ================================================
+# Functions to create data frames from data blocks
+# ================================================
+
 def df_from_plate_like_block(data_block, data_label: str='Value'):
     """Melt single value data from a plate-like format into a long format df"""
     
@@ -226,6 +230,37 @@ def df_from_plate_like_block(data_block, data_label: str='Value'):
 
     return df_long
 
+
+def df_from_multiple_reads_kinetic(data_block):
+    well = data_block[0][0]
+    df = pd.DataFrame(
+        [r[1:] for r in data_block[1:]],
+        columns=data_block[0][1:],
+        index=[r[0] for r in data_block[1:]]
+    )
+    df = df.T
+    df.index.name = "Cycle"
+    df = df.reset_index()
+
+    df["Well"] = well
+
+    # data types
+    df["Mean"] = df["Mean"].astype(float)
+
+    for col_name in df.columns:
+        if col_name == "Well":
+            pass
+        else:
+            df[col_name] = df[col_name].astype(float)
+    
+    df['Cycle'] = df['Cycle'].astype(int)
+    
+    return df
+
+
+# ========================
+# Error handling
+# ========================
 
 class ParseError(Exception):
     """Base class for parsing-related errors."""

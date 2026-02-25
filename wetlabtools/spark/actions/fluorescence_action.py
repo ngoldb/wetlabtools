@@ -1,4 +1,5 @@
 import datetime
+import pandas as pd
 from wetlabtools.spark.actions.base_action import Action
 from wetlabtools.spark.actions.plate_action import PlateAction
 from wetlabtools.spark.actions.kinetic_action import KineticAction
@@ -6,7 +7,7 @@ from wetlabtools.spark.actions.kinetic_action import KineticAction
 from wetlabtools.plate import PlateRegion
 
 from wetlabtools.spark.action_registry import register_action
-from wetlabtools.spark.parse import block_2_dict, df_from_plate_like_block
+from wetlabtools.spark.parse import block_2_dict, df_from_plate_like_block, df_from_multiple_reads_kinetic
 
 
 @register_action("fluorescence top reading")
@@ -59,10 +60,24 @@ class FluorescenceAction(Action):
         
     
     def _parse_data(self, ctx):
-        if self.kinetic:
+        if self.kinetic & self.multiple_reads:
+            data_df = pd.DataFrame()
+            for well in self.region.wells: 
+                _ = ctx.read_until(
+                    lambda row: row[0]==well,
+                    drop_empty=False
+                )
+                data_block = ctx.read_until_empty_row(drop_empty=False)
+                df = df_from_multiple_reads_kinetic(data_block)
+                data_df = pd.concat([data_df, df])
+
+            self.data = data_df
+
+        elif self.kinetic:
             raise NotImplementedError('Parsing data from fluorescence measurements inside kinetic loop not implemented')
         elif self.multiple_reads:
             raise NotImplementedError('Parsing data from fluorescence measurements with multiple reads per well not implemented')
+        
         else:
             _ = ctx.read_until(
                     lambda row: row[0]=='<>',
