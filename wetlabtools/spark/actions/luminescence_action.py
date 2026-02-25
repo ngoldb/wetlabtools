@@ -1,4 +1,5 @@
 import datetime
+import numpy as np
 import pandas as pd
 
 from wetlabtools.plate import PlateRegion
@@ -61,7 +62,7 @@ class LuminescenceAction(Action):
         if self.multiple_reads:
             raise NotImplementedError("Parsing data from fluorescence measurements with multiple reads per well not implemented")
         
-        if self.kinetic:
+        elif self.kinetic:
             _ = ctx.read_until(
                 lambda row: self.label in row[0],
                 drop_empty=False
@@ -74,7 +75,18 @@ class LuminescenceAction(Action):
                 index=[r[0] for r in data_block[1:]]
             )
             data_df.index.name = data_block[0][0]
-            self.data = data_df.reset_index().melt(id_vars=["Cycle Nr.", "Time [s]", "Temp. [°C]"], var_name="Well")
+            long_df = data_df.reset_index().melt(id_vars=["Cycle Nr.", "Time [s]", "Temp. [°C]"], var_name="Well")
+
+            # data types
+            long_df.replace("OVER", np.nan, inplace=True)
+            long_df.replace("", np.nan, inplace=True)
+            for col_name in long_df.columns:
+                if col_name == "Well":
+                    pass
+                else:
+                    long_df[col_name] = long_df[col_name].astype(float)
+            long_df["Cycle Nr."] = long_df["Cycle Nr."].astype(int)
+            self.data = long_df
 
         else:
-            pass
+            raise NotImplementedError()

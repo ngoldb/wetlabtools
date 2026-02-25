@@ -241,18 +241,17 @@ def df_from_multiple_reads_kinetic(data_block):
     df = df.T
     df.index.name = "Cycle"
     df = df.reset_index()
-
     df["Well"] = well
 
     # data types
+    df.replace("OVER", np.nan, inplace=True)
+    df.replace("", np.nan, inplace=True)
     df["Mean"] = df["Mean"].astype(float)
-
     for col_name in df.columns:
         if col_name == "Well":
             pass
         else:
             df[col_name] = df[col_name].astype(float)
-    
     df['Cycle'] = df['Cycle'].astype(int)
     
     return df
