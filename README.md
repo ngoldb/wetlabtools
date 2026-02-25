@@ -23,9 +23,12 @@ conda activate wetlabtools
 python -m ipykernel install --user --name=wetlabtools
 ```
 
+## Examples
+A jupyter notebook with examples is included here: `examples/examples.ipynb`.
+
 ## CD data
 Chirascan CD data processing and plotting:
 see cd [readme](wetlabtools/chirascan/readme.md#chirascan-cd-data-analysis)
 
-## Examples
-A jupyter notebook with examples is included here: `examples/examples.ipynb`.
+## Tecan Spark plate reader
+Check the [readme](wetlabtools/spark/readme.md) for the Tecan Spark plate reader.
