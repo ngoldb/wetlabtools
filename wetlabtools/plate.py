@@ -166,8 +166,8 @@ class Plate:
             for k, v in kwargs.items():
                 self.wells[loc].data[k] = v
 
-        for k in kwargs:
-            self._promote_if_identical(k)
+        # for k in kwargs:
+        #     self._promote_if_identical(k)
 
     # ----------------------------
     # Promotion / Demotion
@@ -224,8 +224,8 @@ class Plate:
                 plate.plate_data[plate_id_col] = unique_ids[0]
 
         all_keys = {k for w in plate.wells.values() for k in w.data}
-        for key in all_keys:
-            plate._promote_if_identical(key)
+        # for key in all_keys:
+        #     plate._promote_if_identical(key)
 
         return plate
 
@@ -252,7 +252,7 @@ class Plate:
                     loc = f"{row_label}{col_label}"
                     plate.wells[loc].data[value_name] = val
 
-        plate._promote_if_identical(value_name)
+        # plate._promote_if_identical(value_name)
         return plate
 
     # ----------------------------

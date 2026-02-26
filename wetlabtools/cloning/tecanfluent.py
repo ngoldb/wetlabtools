@@ -281,7 +281,7 @@ def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, caut
     
     if n_transform_2 > 0:
         trf_2_map_xlsx = os.path.join(gwl_output, plate_id, f"{plate_id}_transform_2_plate_map.xlsx")
-        trf_2_map = transform_1_df[['Name', 'Transform', 'dest_numerical']].copy()
+        trf_2_map = transform_2_df[['Name', 'Transform', 'dest_numerical']].copy()
         trf_2_map['Well Location'] = trf_2_map['dest_numerical'].map(to_alphanumerical)
         trf_2_map.rename({'Transform': 'Strain'}, inplace=True, axis=1)
         trf_2_map.drop('dest_numerical', inplace=True, axis=1)
