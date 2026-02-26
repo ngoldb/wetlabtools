@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from wetlabtools.plate import PlateRegion
-from wetlabtools.spark.parse import block_2_dict
+from wetlabtools.spark.parse import block_2_dict, df_from_plate_like_block
 from wetlabtools.spark.action_registry import register_action
 
 from .base_action import Action
@@ -89,4 +89,7 @@ class LuminescenceAction(Action):
             self.data = long_df
 
         else:
-            raise NotImplementedError()
+            _ = ctx.read_until_empty_row()
+            ctx.advance()
+            data_block = ctx.read_until_empty_row()
+            self.data = df_from_plate_like_block(data_block, data_label='value')
