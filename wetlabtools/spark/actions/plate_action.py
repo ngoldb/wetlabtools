@@ -31,8 +31,15 @@ class PlateAction(Action):
         if "Plate" not in ctx.peek(1, drop_empty=False)[0]:
             raise BlockMismatchError(self.__class__.__name__, ctx.cursor)
 
-        block = ctx.read_until_empty_row(drop_empty=True)
+        block = ctx.read_until(
+            lambda row: row[0] == '',
+            drop_empty=False
+        )
+        block = [[c for c in row if c !="" ] for row in block]
         block_dict = block_2_dict(block)
+        if block_dict['Plate area'].endswith(';'):
+            block_dict['Plate area'] = block_dict['Plate area'] + ctx.current(drop_empty=True)[0]
+            
         self.label = block_dict["Name"]
         self.total_wells = int(self.label[3:-2])
         self.rows, self.cols = WELL_FORMATS[self.total_wells]
