@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from wetlabtools.plate import PlateRegion
-from wetlabtools.spark.parse import block_2_dict, df_from_plate_like_block
+from wetlabtools.spark.parse import block_2_dict, df_from_plate_like_block, df_from_multiple_reads_kinetic
 from wetlabtools.spark.action_registry import register_action
 
 from .base_action import Action
@@ -59,7 +59,21 @@ class LuminescenceAction(Action):
 
     
     def _parse_data(self, ctx):
-        if self.multiple_reads:
+        if self.kinetic & self.multiple_reads:
+            # this is taken from fluorescence example data - not sure if the data format would be the same
+            data_df = pd.DataFrame()
+            for well in self.region.wells: 
+                _ = ctx.read_until(
+                    lambda row: row[0]==well,
+                    drop_empty=False
+                )
+                data_block = ctx.read_until_empty_row(drop_empty=False)
+                df = df_from_multiple_reads_kinetic(data_block)
+                data_df = pd.concat([data_df, df])
+
+            self.data = data_df
+    
+        elif self.multiple_reads:
             raise NotImplementedError("Parsing data from fluorescence measurements with multiple reads per well not implemented")
         
         elif self.kinetic:
@@ -93,3 +107,11 @@ class LuminescenceAction(Action):
             ctx.advance()
             data_block = ctx.read_until_empty_row()
             self.data = df_from_plate_like_block(data_block, data_label='value')
+
+        # collect end time of measurement
+        _ = ctx.read_until(
+            lambda row: row[0]=="End Time",
+            drop_empty=False
+        )
+        end_time_str = ctx.current(drop_empty=True)[1]
+        self.end_time = datetime.datetime.strptime(end_time_str, "%Y-%m-%d %H:%M:%S")

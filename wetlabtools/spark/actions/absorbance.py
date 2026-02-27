@@ -63,9 +63,17 @@ class AbsorbanceAction(Action):
 
         self.temperature = float(meta_data_dict['Temperature [°C]'])
         self.start_time = datetime.datetime.strptime(meta_data_dict['Start Time'], "%Y-%m-%d %H:%M:%S")
+
+        if any(["Multiple Reads per Well" in key for key in settings_dict.keys()]):
+            self.multiple_reads = True
+        else:
+            self.multiple_reads = False
     
     
     def _parse_data(self, ctx):
+        if self.multiple_reads:
+            raise NotImplementedError("Parsing data from absorbance measurements with multiple reads per well not implemented")
+        
         if self.kinetic:
             raise NotImplementedError("Parsing data from absorbance measurements inside kinetic loop not implemented")
         
@@ -140,4 +148,10 @@ class AbsorbanceAction(Action):
                 data_block = ctx.read_until_empty_row(drop_empty=False)
                 self.data = df_from_plate_like_block(data_block, data_label='value')
         
-        # TODO: find end time
+        # collect end time of measurement
+        _ = ctx.read_until(
+            lambda row: row[0]=="End Time",
+            drop_empty=False
+        )
+        end_time_str = ctx.current(drop_empty=True)[1]
+        self.end_time = datetime.datetime.strptime(end_time_str, "%Y-%m-%d %H:%M:%S")

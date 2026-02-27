@@ -85,3 +85,11 @@ class FluorescenceAction(Action):
             )
             data_block = ctx.read_until_empty_row(drop_empty=False)
             self.data = df_from_plate_like_block(data_block, data_label='value')
+
+        # collect end time of measurement
+        _ = ctx.read_until(
+            lambda row: row[0]=="End Time",
+            drop_empty=False
+        )
+        end_time_str = ctx.current(drop_empty=True)[1]
+        self.end_time = datetime.datetime.strptime(end_time_str, "%Y-%m-%d %H:%M:%S")
