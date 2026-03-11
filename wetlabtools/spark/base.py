@@ -69,6 +69,7 @@ class Experiment:
         self.workflow = workflow_from_action_list(action_list)
 
         # now parse action blocks
+        self.data = {}
         df = pd.read_excel(self.file, header=None)
         ctx = ParseContext(df, drop_empty_cells=False)
         _ = ctx.read_until(
@@ -78,6 +79,10 @@ class Experiment:
         _ =ctx.read_until_empty_row()
         for action in self.workflow.iter_execution_order():
             action.parse_block(ctx)
+            try: 
+                self.data[action.label] = action.data
+            except AttributeError as e:
+                pass
 
     def __str__(self) -> str:
         return f"Tecan Spark Experiment from {self.date} {self.time} by {self.user}\nFile: {self.file}"
