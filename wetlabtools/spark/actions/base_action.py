@@ -57,6 +57,12 @@ class Action:
             f"{self.__class__.__name__} must implement parse_block()"
         )
     
+    def plot(self):
+        """Function for default plotting of action data"""
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement parse_block()"
+        )
+    
     def __repr__(self):
         return f"{self.__class__.__name__}(label={self.label}, children={len(self.children)})"
     

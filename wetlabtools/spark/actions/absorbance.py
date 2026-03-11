@@ -1,6 +1,7 @@
 import datetime
 import pandas as pd
 import numpy as np
+import seaborn as sns
 
 from wetlabtools.plate import PlateRegion
 from wetlabtools.spark.action_registry import register_action
@@ -155,3 +156,18 @@ class AbsorbanceAction(Action):
         )
         end_time_str = ctx.current(drop_empty=True)[1]
         self.end_time = datetime.datetime.strptime(end_time_str, "%Y-%m-%d %H:%M:%S")
+    
+    def plot(self):
+        if self.scan:
+            p = sns.lineplot(self.data, x="Wavelength", y="Value", hue="Well")
+            p.set_ylabel("Absorbance (a.u.)")
+            p.set_xlabel("Wavelength (nm)")
+        
+        else:
+            if self.reference:
+                y_value = "difference"
+            else:
+                y_value = "value" 
+            
+            p = sns.barplot(self.data, x="Well", y=y_value)
+            p.set_ylabel("Absorbance (a.u.)")
