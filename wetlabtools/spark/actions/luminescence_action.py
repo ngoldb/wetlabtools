@@ -1,6 +1,7 @@
 import datetime
 import numpy as np
 import pandas as pd
+import seaborn as sns
 
 from wetlabtools.plate import PlateRegion
 from wetlabtools.spark.parse import block_2_dict, df_from_plate_like_block, df_from_multiple_reads_kinetic
@@ -115,3 +116,8 @@ class LuminescenceAction(Action):
         )
         end_time_str = ctx.current(drop_empty=True)[1]
         self.end_time = datetime.datetime.strptime(end_time_str, "%Y-%m-%d %H:%M:%S")
+    
+    def plot(self):
+        if self.kinetic:
+            p = sns.lineplot(self.data, x="Time [s]", y="value", hue="Well")
+            p.set_ylabel("Luminescence (a.u.)")

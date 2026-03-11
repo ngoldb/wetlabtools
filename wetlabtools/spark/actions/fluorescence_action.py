@@ -1,5 +1,7 @@
 import datetime
 import pandas as pd
+import seaborn as sns
+
 from wetlabtools.spark.actions.base_action import Action
 from wetlabtools.spark.actions.plate_action import PlateAction
 from wetlabtools.spark.actions.kinetic_action import KineticAction
@@ -93,3 +95,13 @@ class FluorescenceAction(Action):
         )
         end_time_str = ctx.current(drop_empty=True)[1]
         self.end_time = datetime.datetime.strptime(end_time_str, "%Y-%m-%d %H:%M:%S")
+    
+    def plot(self):
+        if self.kinetic & self.multiple_reads:
+            p = sns.lineplot(self.data, x="Time [s]", y="Mean", hue="Well")
+            p.set_ylabel('Mean Fluorescence')
+        
+        elif not self.kinetic:
+            # single per-well measurement
+            p = sns.lineplot(self.data, x='Well', y='value')
+            p.set_ylabel('Fluoresence')
