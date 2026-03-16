@@ -47,7 +47,7 @@ def make_cloning_worklists(df, rxn, settings):
 
     # Inserts
     gwl_lines = []
-    liquid_class = "Water Contact Wet Single"
+    liquid_class = ""
     for i, row in rxn_df.iterrows():
         src_well = row["src_numerical"]
         dest_well = row["dest_numerical"]
@@ -129,7 +129,7 @@ def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, caut
     ALLOWED_VECTORS = ['LM670', 'LM627', 'PHLSEC', 'PHLSEC_FC', 'CUSTOM_VECTOR_1', 'CUSTOM_VECTOR_2', 'CUSTOM_VECTOR_3']
     CLONING_METHODS = ['GGA', 'GIBSON']
     TRANSFORMATION_STRAINS = ['HB101', 'T7EXPRESS', 'NEBSTABLE', 'DH5A', 'BL21', 'CUSTOM_STRAIN_1', 'CUSTOM_STRAIN_2', 'CUSTOM_STRAIN_3']
-    VERSION = 0.2
+    VERSION = 0.3
     
     # mapping alpha-numerical well indices to numerical indices
     rows = list("ABCDEFGH")
