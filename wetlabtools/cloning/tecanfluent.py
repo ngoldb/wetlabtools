@@ -129,7 +129,7 @@ def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, caut
     ALLOWED_VECTORS = ['LM670', 'LM627', 'PHLSEC', 'PHLSEC_FC', 'CUSTOM_VECTOR_1', 'CUSTOM_VECTOR_2', 'CUSTOM_VECTOR_3']
     CLONING_METHODS = ['GGA', 'GIBSON']
     TRANSFORMATION_STRAINS = ['HB101', 'T7EXPRESS', 'NEBSTABLE', 'DH5A', 'BL21', 'CUSTOM_STRAIN_1', 'CUSTOM_STRAIN_2', 'CUSTOM_STRAIN_3']
-    VERSION = 0.3
+    VERSION = 0.4
     
     # mapping alpha-numerical well indices to numerical indices
     rows = list("ABCDEFGH")
@@ -155,6 +155,10 @@ def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, caut
     # sanity checks
     df['Cloning'] = df['Cloning'].str.upper()
     df['Vector'] = df['Vector'].str.upper()
+    if not all(df['Transform_1'].isnull()):
+        df['Transform_1'] = df['Transform_1'].str.upper()
+    if not all(df['Transform_2'].isnull()):
+        df['Transform_2'] = df['Transform_2'].str.upper()
     assert df['Cloning'].isin(CLONING_METHODS).all(), f"Unknown cloning method(s): {list(df.loc[~df['Cloning'].isin(CLONING_METHODS)]['Cloning'].unique())}. Cloning methods must be {CLONING_METHODS}"
     assert df['Vector'].isin(ALLOWED_VECTORS).all(), f"Unknown vector: {list(df.loc[~df['Vector'].isin(ALLOWED_VECTORS)]['Vector'].unique())}. Vectors must be {ALLOWED_VECTORS}"
     
@@ -191,6 +195,10 @@ def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, caut
 
     n_gga = len(df.loc[df['Cloning']=="GGA"])
     n_gib = len(df.loc[df['Cloning']=="GIBSON"])
+    vector_counts = [len(df.loc[df['Vector']==v]) for v in ALLOWED_VECTORS]
+    strain_counts1 = [len(df.loc[df['Transform_1']==s]) for s in TRANSFORMATION_STRAINS]
+    strain_counts2 = [len(df.loc[df['Transform_2']==s]) for s in TRANSFORMATION_STRAINS]
+    strain_counts = [sum(a) for a in zip(strain_counts1, strain_counts2)]
 
     if n_gga > 0:
         gga_df = make_cloning_worklists(df, "GGA", gga_settings)
@@ -251,7 +259,7 @@ def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, caut
 
     # summary file
     with open(cloning_summary_file, "w") as fobj:
-        fobj.writelines(f"number_gga,number_gibson,number_transform_1,number_transform_2,worklisting_version\n{n_gga},{n_gib},{n_transform_1},{n_transform_2},{VERSION}")
+        fobj.writelines(f"number_gga,number_gibson,number_transform_1,number_transform_2,{','.join('n_'+v for v in ALLOWED_VECTORS)},{','.join('n_'+s for s in TRANSFORMATION_STRAINS)},worklisting_version\n{n_gga},{n_gib},{n_transform_1},{n_transform_2},{','.join([str(x) for x in vector_counts])},{','.join([str(x) for x in strain_counts])},{VERSION}")
 
     # Plate maps for users
     if n_gga > 0:
@@ -288,4 +296,11 @@ def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, caut
         plate = Plate.from_long_dataframe(trf_2_map)
         plate.to_plate_map_excel(trf_2_map_xlsx)
 
+    # print summary for user
+    summary_df = pd.read_csv(cloning_summary_file)
+    print("\nSummary:")
+    for column in summary_df.columns:
+        if summary_df[column][0] != 0:
+            print(f"{column}:", summary_df[column][0])
+    
     return df, cloning_df, transform_1_df, transform_2_df
