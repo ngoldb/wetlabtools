@@ -18,9 +18,9 @@ The target vector for the assembly is specified in the ```Vector``` column. The 
 - LM627
 - pHLSec
 - pHLSec_fc
-- Custom_1
-- Custom_2
-- Custom_3
+- Custom_vector_1
+- Custom_vector_2
+- Custom_vector_3
 
 ### Transformation Strain
 The assembled plasmids can be transformed into up to 2 strains. The strains can be specified in the columns ```Transform_1``` and ```Transform_2```, respectively. The available strains are:
@@ -29,9 +29,9 @@ The assembled plasmids can be transformed into up to 2 strains. The strains can 
 - DH5a
 - NEBStable
 - BL21
-- Custom_1
-- Custom_2
-- Custom_3
+- Custom_strain_1
+- Custom_strain_2
+- Custom_strain_3
 
 If you don't want your assembled plasmid to be transformed, simply do not add any strain to the respective columns. Note the difference between ```Transform_1``` and ```Transform_2```: bacteria from ```Transform_1``` will be recovered in a flat 96 well plate (round bottom) and can easily plated on agar plates using a multi-channel pipette. Bacteria from ```Transform_2``` will be recovered in a 96 deep-well plate such that after recovery growth media with the respective antibiotics can be added to grow pre-cultures for expression.
 
