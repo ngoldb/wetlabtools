@@ -298,6 +298,11 @@ def make_cloning_worklists_from_twist(plate_map_path: str, gwl_output: str, caut
 
     # print summary for user
     summary_df = pd.read_csv(cloning_summary_file)
+    n_plates = 0
+    for column in summary_df[['number_gga', 'number_gibson', 'number_transform_1', 'number_transform_2']]:
+        if summary_df[column].values[0] > 0:
+            n_plates += 1
+    print("\nRequired PCR plates:", n_plates)
     print("\nSummary:")
     for column in summary_df.columns:
         if summary_df[column][0] != 0:
